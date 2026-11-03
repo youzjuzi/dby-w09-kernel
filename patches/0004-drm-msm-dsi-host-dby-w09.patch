@@ -1,0 +1,18 @@
+--- a/drivers/gpu/drm/msm/dsi/dsi_host.c
++++ b/drivers/gpu/drm/msm/dsi/dsi_host.c
+@@ -904,6 +904,15 @@
+ 		data |= DSI_EOT_PACKET_CTRL_TX_EOT_APPEND;
+ 	dsi_write(msm_host, REG_DSI_EOT_PACKET_CTRL, data);
+ 
++	/*
++	 * Qualcomm downstream dsi_ctrl_hw_cmn.c programs this HS TX timeout.
++	 * Upstream leaves the soft-reset default 0xffff, which repeatedly
++	 * times out on DBY-W09; clearing the flag interrupts output in display tests.
++	 */
++	dsi_write(msm_host, REG_DSI_HS_TIMER_CTRL,
++		  DSI_HS_TIMER_CTRL_HS_TX_TO(0xfd08) |
++		  DSI_HS_TIMER_CTRL_TIMER_RESOLUTION(3));
++
+ 	/* allow only ack-err-status to generate interrupt */
+ 	dsi_write(msm_host, REG_DSI_ERR_INT_MASK0, 0x13ff3fe0);
+ 

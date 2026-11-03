@@ -1,0 +1,196 @@
+Upstream notices from the Linux 7.2.10 SM8250 and PM8150-family include graphs.
+The historical snapshot lineage is described in README.md.
+
+arch/arm64/boot/dts/qcom/sm8250.dtsi
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/clock/qcom,videocc-sm8250.h
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/clock/qcom,camcc-sm8250.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/thermal/thermal.h
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * This header provides constants for most thermal bindings.
+ *
+ * Copyright (C) 2013 Texas Instruments
+ *	Eduardo Valentin <eduardo.valentin@ti.com>
+ */
+
+include/dt-bindings/sound/qcom,q6afe.h
+/* SPDX-License-Identifier: GPL-2.0 */
+
+include/dt-bindings/sound/qcom,q6dsp-lpass-ports.h
+/* SPDX-License-Identifier: GPL-2.0 */
+
+include/dt-bindings/soc/qcom,rpmh-rsc.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/soc/qcom,apr.h
+/* SPDX-License-Identifier: GPL-2.0 */
+
+include/dt-bindings/power/qcom,rpmhpd.h
+/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
+/*
+ * Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ */
+
+include/dt-bindings/power/qcom-rpmpd.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (c) 2018, The Linux Foundation. All rights reserved. */
+
+include/dt-bindings/phy/phy-qcom-qmp.h
+/* SPDX-License-Identifier: (GPL-2.0 OR BSD-3-Clause) */
+/*
+ * Qualcomm QMP PHY constants
+ *
+ * Copyright (C) 2022 Linaro Limited
+ */
+
+include/dt-bindings/mailbox/qcom-ipcc.h
+/* SPDX-License-Identifier: GPL-2.0 OR BSD-2-Clause */
+/*
+ * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/interconnect/qcom,sm8250.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Qualcomm SM8250 interconnect IDs
+ *
+ * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/interconnect/qcom,osm-l3.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (C) 2019 The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/gpio/gpio.h
+/* SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause) */
+/*
+ * This header provides constants for most GPIO bindings.
+ *
+ * Most GPIO bindings include a flags cell as part of the GPIO specifier.
+ * In most cases, the format of the flags cell uses the standard values
+ * defined in this header.
+ */
+
+include/dt-bindings/dma/qcom-gpi.h
+/* SPDX-License-Identifier: GPL-2.0 OR BSD-2-Clause */
+/* Copyright (c) 2020, Linaro Ltd.  */
+
+include/dt-bindings/clock/qcom,rpmh.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (c) 2018, 2020, The Linux Foundation. All rights reserved. */
+
+include/dt-bindings/clock/qcom,gpucc-sm8250.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/clock/qcom,gcc-sm8250.h
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (c) 2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/clock/qcom,dsi-phy-28nm.h
+/* SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause */
+
+include/dt-bindings/clock/qcom,dispcc-sm8250.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/interrupt-controller/arm-gic.h
+/* SPDX-License-Identifier: GPL-2.0 OR MIT */
+/*
+ * This header provides constants for the ARM GIC.
+ */
+
+include/dt-bindings/interrupt-controller/irq.h
+/* SPDX-License-Identifier: GPL-2.0 OR MIT */
+/*
+ * This header provides constants for most IRQ bindings.
+ *
+ * Most IRQ bindings include a flags cell as part of the IRQ specifier.
+ * In most cases, the format of the flags cell uses the standard values
+ * defined in this header.
+ */
+
+arch/arm64/boot/dts/qcom/pm8150b.dtsi
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019, Linaro Limited
+ */
+
+include/dt-bindings/spmi/spmi.h
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ */
+
+include/dt-bindings/iio/qcom,spmi-vadc.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * Copyright (c) 2012-2014,2018,2020 The Linux Foundation. All rights reserved.
+ */
+
+arch/arm64/boot/dts/qcom/pm8150l.dtsi
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019, Linaro Limited
+ */
+
+arch/arm64/boot/dts/qcom/pm8150.dtsi
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019, Linaro Limited
+ */
+
+include/dt-bindings/input/input.h
+/* SPDX-License-Identifier: GPL-2.0 */
+/*
+ * This header provides constants for most input bindings.
+ *
+ * Most input bindings include key code, matrix key code format.
+ * In most cases, key code and matrix key code format uses
+ * the standard values/macro defined in this header.
+ */
+
+include/dt-bindings/input/linux-event-codes.h
+/* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
+/*
+ * Input event codes
+ *
+ *    *** IMPORTANT ***
+ * This file is not only included from C-code but also from devicetree source
+ * files. As such this file MUST only contain comments and defines.
+ *
+ * Copyright (c) 1999-2002 Vojtech Pavlik
+ * Copyright (c) 2015 Hans de Goede <hdegoede@redhat.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
+ */

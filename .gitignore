@@ -1,0 +1,11 @@
+/local/
+/out/
+/build/
+__pycache__/
+*.pyc
+*.dtb
+*.dtbo
+*.bin
+*.img
+dby-w09-panel-data.h
+dby-memory-private.dtsi

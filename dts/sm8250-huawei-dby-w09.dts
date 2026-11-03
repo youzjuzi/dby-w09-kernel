@@ -1,0 +1,679 @@
+// SPDX-License-Identifier: GPL-2.0-only AND BSD-3-Clause
+/* Project board layers, reorganised for standalone use; see provenance.md.
+ * PM8150B IRQ declaration: Copyright (c) 2017-2019, The Linux Foundation.
+ * Copyright (c) 2019, Linaro Limited. See NOTICE and LICENSES/.
+ */
+/* Project board baseline. See provenance.md. */
+/dts-v1/;
+#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+#include "sm8250.dtsi"
+#include "pm8150.dtsi"
+/ { model="Huawei DBY-W09"; compatible="huawei,dby-w09", "qcom,sm8250"; /delete-node/ reserved-memory; /delete-node/ memory@80000000; aliases { mmc0=&sdhc_2; serial1=&uart6; };
+ display-hold {
+  compatible = "huawei,dby-w09-display-hold";
+  power-domains = <&rpmhpd SM8250_MMCX>, <&rpmhpd SM8250_MX>, <&rpmhpd SM8250_CX>;
+  interconnects = <&mmss_noc MASTER_MDP_PORT0 0 &mc_virt SLAVE_EBI_CH0 0>,
+                  <&mmss_noc MASTER_MDP_PORT1 0 &mc_virt SLAVE_EBI_CH0 0>;
+ };
+};
+&{/smem} { /delete-property/ memory-region; };
+&{/soc@0/gpu@3d00000/zap-shader} { /delete-property/ memory-region; };
+&{/soc@0/remoteproc@5c00000} { /delete-property/ memory-region; };
+&{/soc@0/remoteproc@8300000} { /delete-property/ memory-region; };
+&{/soc@0/video-codec@aa00000} { /delete-property/ memory-region; };
+&{/soc@0/remoteproc@17300000} { /delete-property/ memory-region; };
+&{/soc@0/mailbox@408000} { status="disabled"; };
+&{/soc@0/efuse@784000} { status="disabled"; };
+&{/soc@0/rng@793000} { status="disabled"; };
+&{/soc@0/dma-controller@800000} { status="disabled"; };
+&{/soc@0/geniqup@8c0000} { status="disabled"; };
+&{/soc@0/dma-controller@900000} { status="disabled"; };
+&{/soc@0/geniqup@9c0000} { status="okay"; };
+&{/soc@0/dma-controller@a00000} { status="disabled"; };
+&{/soc@0/geniqup@ac0000} { status="disabled"; };
+&{/soc@0/pcie@1c00000} { status="disabled"; };
+&{/soc@0/phy@1c06000} { status="disabled"; };
+&{/soc@0/pcie@1c08000} { status="disabled"; };
+&{/soc@0/phy@1c0e000} { status="disabled"; };
+&{/soc@0/pcie@1c10000} { status="disabled"; };
+&{/soc@0/phy@1c16000} { status="disabled"; };
+&{/soc@0/ufshc@1d84000} { status="disabled"; };
+&{/soc@0/phy@1d87000} { status="disabled"; };
+&{/soc@0/dma-controller@1dc4000} { status="disabled"; };
+&{/soc@0/crypto@1dfa000} { status="disabled"; };
+&{/soc@0/codec@3240000} { status="disabled"; };
+&{/soc@0/soundwire@3250000} { status="disabled"; };
+&{/soc@0/codec@3370000} { status="disabled"; };
+&{/soc@0/rxmacro@3200000} { status="disabled"; };
+&{/soc@0/soundwire@3210000} { status="disabled"; };
+&{/soc@0/txmacro@3220000} { status="disabled"; };
+&{/soc@0/soundwire@3230000} { status="disabled"; };
+&{/soc@0/pinctrl@33c0000} { status="disabled"; };
+&{/soc@0/gpu@3d00000} { status="disabled"; };
+&{/soc@0/gmu@3d6a000} { status="disabled"; };
+&{/soc@0/clock-controller@3d90000} { status="disabled"; };
+&{/soc@0/iommu@3da0000} { status="disabled"; };
+&{/soc@0/remoteproc@5c00000} { status="disabled"; };
+&{/soc@0/stm@6002000} { status="disabled"; };
+&{/soc@0/tpda@6004000} { status="disabled"; };
+&{/soc@0/funnel@6005000} { status="disabled"; };
+&{/soc@0/funnel@6041000} { status="disabled"; };
+&{/soc@0/funnel@6042000} { status="disabled"; };
+&{/soc@0/funnel@6045000} { status="disabled"; };
+&{/soc@0/replicator@6046000} { status="disabled"; };
+&{/soc@0/etr@6048000} { status="disabled"; };
+&{/soc@0/tpdm@684c000} { status="disabled"; };
+&{/soc@0/funnel@6b04000} { status="disabled"; };
+&{/soc@0/etf@6b05000} { status="disabled"; };
+&{/soc@0/replicator@6b06000} { status="disabled"; };
+&{/soc@0/tpdm@6c08000} { status="disabled"; };
+&{/soc@0/funnel@6c0b000} { status="disabled"; };
+&{/soc@0/funnel@6c2d000} { status="disabled"; };
+&{/soc@0/etm@7040000} { status="disabled"; };
+&{/soc@0/etm@7140000} { status="disabled"; };
+&{/soc@0/etm@7240000} { status="disabled"; };
+&{/soc@0/etm@7340000} { status="disabled"; };
+&{/soc@0/etm@7440000} { status="disabled"; };
+&{/soc@0/etm@7540000} { status="disabled"; };
+&{/soc@0/etm@7640000} { status="disabled"; };
+&{/soc@0/etm@7740000} { status="disabled"; };
+&{/soc@0/funnel@7800000} { status="disabled"; };
+&{/soc@0/funnel@7810000} { status="disabled"; };
+&{/soc@0/remoteproc@8300000} { status="disabled"; };
+&{/soc@0/phy@88e3000} { status="disabled"; };
+&{/soc@0/phy@88e4000} { status="disabled"; };
+&{/soc@0/regulator@88e7000} { status="disabled"; };
+&{/soc@0/phy@88e8000} { status="disabled"; };
+&{/soc@0/phy@88eb000} { status="disabled"; };
+&{/soc@0/mmc@8804000} { status="disabled"; };
+&{/soc@0/pmu@9091000} { status="disabled"; };
+&{/soc@0/pmu@90b6400} { status="disabled"; };
+&{/soc@0/usb@a6f8800} { status="disabled"; };
+&{/soc@0/system-cache-controller@9200000} { status="disabled"; };
+&{/soc@0/usb@a8f8800} { status="disabled"; };
+&{/soc@0/video-codec@aa00000} { status="disabled"; };
+&{/soc@0/clock-controller@abf0000} { status="disabled"; };
+&{/soc@0/cci@ac4f000} { status="disabled"; };
+&{/soc@0/cci@ac50000} { status="disabled"; };
+&{/soc@0/camss@ac6a000} { status="disabled"; };
+&{/soc@0/clock-controller@ad00000} { status="disabled"; };
+&{/soc@0/display-subsystem@ae00000} { status="disabled"; };
+&{/soc@0/clock-controller@af00000} { status="disabled"; };
+&{/soc@0/sram@c3f0000} { status="disabled"; };
+&{/soc@0/spmi@c440000} { status="okay"; };
+&{/soc@0/remoteproc@17300000} { status="disabled"; };
+&{/soc@0/watchdog@17c10000} { status="disabled"; };
+&{/soc@0/timer@17c20000} { status="disabled"; };
+&{/smp2p-adsp} { status="disabled"; };
+&{/smp2p-cdsp} { status="disabled"; };
+&{/smp2p-slpi} { status="disabled"; };
+
+&apps_rsc {
+ regulators { compatible="qcom,pm8150l-rpmh-regulators"; qcom,pmic-id="c";
+  vdd_sd: ldo9 { regulator-name="sd-vdd"; regulator-min-microvolt=<2960000>; regulator-max-microvolt=<2960000>; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+  vdd_io_sd: ldo6 { regulator-name="sd-vdd-io"; regulator-min-microvolt=<2960000>; regulator-max-microvolt=<2960000>; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+ };
+};
+&tlmm { sdc2_default: sdc2-default {
+ clk-pins { pins="sdc2_clk"; bias-disable; drive-strength=<16>; };
+ cmd-pins { pins="sdc2_cmd"; bias-pull-up; drive-strength=<16>; };
+ data-pins { pins="sdc2_data"; bias-pull-up; drive-strength=<16>; };
+}; };
+&sdhc_2 { status="okay"; pinctrl-names="default"; pinctrl-0=<&sdc2_default>;
+ vmmc-supply=<&vdd_sd>; vqmmc-supply=<&vdd_io_sd>;
+ bus-width=<4>; broken-cd; no-1-8-v; no-sdio; no-mmc;
+};
+#include "dby-memory-private.dtsi"
+&{/smem} { memory-region=<&dby_smem>; };
+
+// USB2 bring-up: fixed peripheral role; RPMh regulators, no SPMI access.
+&apps_rsc {
+ usb-regulators {
+  compatible = "qcom,pm8150-rpmh-regulators";
+  qcom,pmic-id = "a";
+  usb_l2a: ldo2 {
+   regulator-name = "usb-l2a";
+   regulator-min-microvolt = <3072000>;
+   regulator-max-microvolt = <3072000>;
+   regulator-always-on; regulator-boot-on;
+   regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+  };
+  usb_l5a: ldo5 {
+   regulator-name = "usb-l5a";
+   regulator-min-microvolt = <880000>;
+   regulator-max-microvolt = <880000>;
+   regulator-always-on; regulator-boot-on;
+   regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+  };
+  usb_l12a: ldo12 {
+   regulator-name = "usb-l12a";
+   regulator-min-microvolt = <1800000>;
+   regulator-max-microvolt = <1800000>;
+   regulator-always-on; regulator-boot-on;
+   regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+  };
+ };
+};
+&usb_1_hsphy {
+ status = "okay";
+ vdda-pll-supply = <&usb_l5a>;
+ vdda18-supply = <&usb_l12a>;
+ vdda33-supply = <&usb_l2a>;
+};
+&usb_1 { status = "okay"; qcom,select-utmi-as-pipe-clk; };
+&usb_1_dwc3 {
+ dr_mode = "peripheral";
+ maximum-speed = "high-speed";
+ phys = <&usb_1_hsphy>;
+ phy-names = "usb2-phy";
+ /delete-node/ ports;
+};
+// The deleted SS endpoint has an inbound reference in the disabled QMP PHY.
+// Delete that reference too, without enabling or changing QMP PHY operation.
+&usb_1_qmpphy_usb_ss_in { /delete-property/ remote-endpoint; };
+
+// PCIe/WLAN bring-up: only PCIe0 and WLAN power sequence.
+/ {
+	qca6390-pmu {
+		compatible = "qcom,qca6390-pmu";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&bt_en_state>, <&wlan_en_state>;
+
+		vddaon-supply = <&wifi_s6a>;
+		vddpmu-supply = <&wifi_s6a>;
+		vddrfa0p95-supply = <&wifi_s6a>;
+		vddrfa1p3-supply = <&wifi_s8c>;
+		vddrfa1p9-supply = <&wifi_s5a>;
+		vddpcie1p3-supply = <&wifi_s8c>;
+		vddpcie1p9-supply = <&wifi_s5a>;
+		vddio-supply = <&wifi_s4a>;
+
+		wlan-enable-gpios = <&tlmm 20 GPIO_ACTIVE_HIGH>;
+		bt-enable-gpios = <&tlmm 21 GPIO_ACTIVE_HIGH>;
+
+		regulators {
+			vreg_pmu_rfa_cmn: ldo0 {
+				regulator-name = "vreg_pmu_rfa_cmn";
+			};
+
+			vreg_pmu_aon_0p59: ldo1 {
+				regulator-name = "vreg_pmu_aon_0p59";
+			};
+
+			vreg_pmu_wlcx_0p8: ldo2 {
+				regulator-name = "vreg_pmu_wlcx_0p8";
+			};
+
+			vreg_pmu_wlmx_0p85: ldo3 {
+				regulator-name = "vreg_pmu_wlmx_0p85";
+			};
+
+			vreg_pmu_btcmx_0p85: ldo4 {
+				regulator-name = "vreg_pmu_btcmx_0p85";
+			};
+
+			vreg_pmu_rfa_0p8: ldo5 {
+				regulator-name = "vreg_pmu_rfa_0p8";
+			};
+
+			vreg_pmu_rfa_1p2: ldo6 {
+				regulator-name = "vreg_pmu_rfa_1p2";
+			};
+
+			vreg_pmu_rfa_1p7: ldo7 {
+				regulator-name = "vreg_pmu_rfa_1p7";
+			};
+
+			vreg_pmu_pcie_0p9: ldo8 {
+				regulator-name = "vreg_pmu_pcie_0p9";
+			};
+
+			vreg_pmu_pcie_1p8: ldo9 {
+				regulator-name = "vreg_pmu_pcie_1p8";
+			};
+		};
+	};
+
+};
+&apps_rsc { usb-regulators {
+wifi_s4a: smps4 { regulator-name="wifi-s4a"; regulator-min-microvolt=<1800000>; regulator-max-microvolt=<1800000>; regulator-always-on; regulator-boot-on; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+wifi_s5a: smps5 { regulator-name="wifi-s5a"; regulator-min-microvolt=<1896000>; regulator-max-microvolt=<1900000>; regulator-always-on; regulator-boot-on; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+wifi_s6a: smps6 { regulator-name="wifi-s6a"; regulator-min-microvolt=<948000>; regulator-max-microvolt=<950000>; regulator-always-on; regulator-boot-on; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+wifi_l9a: ldo9 { regulator-name="wifi-l9a"; regulator-min-microvolt=<1200000>; regulator-max-microvolt=<1200000>; regulator-always-on; regulator-boot-on; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+}; };
+&apps_rsc { regulators {
+wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; regulator-max-microvolt=<1350000>; regulator-always-on; regulator-boot-on; regulator-initial-mode=<RPMH_REGULATOR_MODE_HPM>; };
+}; };
+&pcie0 {
+	status = "okay";
+};
+
+&pcie0_phy {
+	status = "okay";
+	vdda-phy-supply = <&usb_l5a>;
+	vdda-pll-supply = <&wifi_l9a>;
+};
+
+&pcieport0 {
+	wifi@0 {
+		compatible = "pci17cb,1101";
+		reg = <0x10000 0x0 0x0 0x0 0x0>;
+
+		vddrfacmn-supply = <&vreg_pmu_rfa_cmn>;
+		vddaon-supply = <&vreg_pmu_aon_0p59>;
+		vddwlcx-supply = <&vreg_pmu_wlcx_0p8>;
+		vddwlmx-supply = <&vreg_pmu_wlmx_0p85>;
+		vddrfa0p8-supply = <&vreg_pmu_rfa_0p8>;
+		vddrfa1p2-supply = <&vreg_pmu_rfa_1p2>;
+		vddrfa1p7-supply = <&vreg_pmu_rfa_1p7>;
+		vddpcie0p9-supply = <&vreg_pmu_pcie_0p9>;
+		vddpcie1p8-supply = <&vreg_pmu_pcie_1p8>;
+	};
+};
+
+&tlmm {
+	bt_en_state: bt-default-state {
+		pins = "gpio21";
+		function = "gpio";
+		drive-strength = <16>;
+		output-low;
+		bias-pull-up;
+	};
+
+	wlan_en_state: wlan-default-state {
+		pins = "gpio20";
+		function = "gpio";
+		drive-strength = <16>;
+		output-low;
+		bias-pull-up;
+	};
+
+};
+
+&uart6 {
+ status = "okay";
+ bluetooth {
+  compatible = "qcom,qca6390-bt";
+  vddrfacmn-supply = <&vreg_pmu_rfa_cmn>;
+  vddaon-supply = <&vreg_pmu_aon_0p59>;
+  vddbtcmx-supply = <&vreg_pmu_btcmx_0p85>;
+  vddrfa0p8-supply = <&vreg_pmu_rfa_0p8>;
+  vddrfa1p2-supply = <&vreg_pmu_rfa_1p2>;
+  vddrfa1p7-supply = <&vreg_pmu_rfa_1p7>;
+ };
+};
+
+/* GPIO6 key baseline; later key integration enables standard PON keys. */
+&pon { status = "okay"; };
+&pon_pwrkey { status = "okay"; };
+&pon_resin { status = "okay"; linux,code = <KEY_VOLUMEDOWN>; };
+&pm8150_temp { status = "disabled"; };
+&pm8150_adc { status = "disabled"; };
+&pm8150_adc_tm { status = "disabled"; };
+&{/soc@0/spmi@c440000/pmic@0/rtc@6000} { qcom,no-alarm; };
+&{/thermal-zones/pm8150-thermal} { status = "disabled"; };
+
+&pm8150_gpios {
+    status = "okay";
+    vol_up: vol-up-state {
+        pins = "gpio6";
+        function = "normal";
+        input-enable;
+        bias-pull-up;
+        power-source = <1>;
+    };
+};
+
+/ {
+    gpio-keys {
+        compatible = "gpio-keys";
+        pinctrl-names = "default";
+        pinctrl-0 = <&vol_up>;
+        key-volume-up {
+            label = "Volume Up";
+            gpios = <&pm8150_gpios 6 GPIO_ACTIVE_LOW>;
+            linux,code = <KEY_VOLUMEUP>;
+            debounce-interval = <15>;
+        };
+    };
+};
+
+/* Project dual C-PHY display integration. See provenance.md. */
+/* Inherit the unchanged baseline without duplicating private configuration. */
+#include <dt-bindings/phy/phy.h>
+
+&dispcc { status = "okay"; };
+&mdss { status = "okay"; };
+&mdss_mdp { status = "okay"; };
+&refgen { status = "okay"; };
+
+&apps_rsc {
+	usb-regulators {
+		display_l14a: ldo14 {
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+	};
+};
+
+&mdss_dsi0 {
+	status = "okay";
+	vdda-supply = <&wifi_l9a>;
+	qcom,dual-dsi-mode;
+	qcom,sync-dual-dsi;
+	qcom,master-dsi;
+
+	panel@0 {
+		compatible = "huawei,dby-w09-nt36523", "novatek,nt36523";
+		reg = <0>;
+		vddio-supply = <&display_l14a>;
+		reset-gpios = <&tlmm 38 GPIO_ACTIVE_LOW>;
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				panel_in_0: endpoint { remote-endpoint = <&mdss_dsi0_out>; };
+			};
+			port@1 {
+				reg = <1>;
+				panel_in_1: endpoint { remote-endpoint = <&mdss_dsi1_out>; };
+			};
+		};
+	};
+};
+
+&mdss_dsi1 {
+	status = "okay";
+	vdda-supply = <&wifi_l9a>;
+	qcom,dual-dsi-mode;
+	qcom,sync-dual-dsi;
+	assigned-clock-parents = <&mdss_dsi0_phy DSI_BYTE_PLL_CLK>,
+				 <&mdss_dsi0_phy DSI_PIXEL_PLL_CLK>;
+};
+
+&mdss_dsi0_out {
+	data-lanes = <0 1 2>;
+	remote-endpoint = <&panel_in_0>;
+};
+&mdss_dsi1_out {
+	data-lanes = <0 1 2>;
+	remote-endpoint = <&panel_in_1>;
+};
+&mdss_dsi0_phy {
+	status = "okay";
+	phy-type = <PHY_TYPE_CPHY>;
+	vdds-supply = <&usb_l5a>;
+};
+&mdss_dsi1_phy {
+	status = "okay";
+	phy-type = <PHY_TYPE_CPHY>;
+	vdds-supply = <&usb_l5a>;
+};
+
+/* Project backlight I2C controller enablement. See provenance.md. */
+
+&qupv3_id_1 { status = "okay"; };
+&gpi_dma1 { status = "okay"; };
+&i2c11 { status = "okay"; };
+
+/* Project I2C backlight node. See provenance.md. */
+
+&i2c11 {
+	backlight@31 {
+		compatible = "richtek,rt8555";
+		reg = <0x31>;
+	};
+};
+
+/* Project legacy SPI touch wiring. See provenance.md. */
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+&qupv3_id_2 { status = "okay"; };
+&tlmm {
+	touch_irq_default: touch-irq-default-state {
+		pins = "gpio39";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+	touch_reset_default: touch-reset-default-state {
+		pins = "gpio98";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+	};
+};
+&spi14 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&qup_spi14_cs &qup_spi14_data_clk>;
+	touchscreen@0 {
+		compatible = "novatek,nt36523-spi";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		interrupts-extended = <&tlmm 39 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&tlmm 98 GPIO_ACTIVE_LOW>;
+		firmware-name = "novatek/nt36523-csot.bin";
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch_irq_default &touch_reset_default>;
+	};
+};
+
+/* Project read-only battery gauge integration. See provenance.md. */
+#include <dt-bindings/spmi/spmi.h>
+
+&spmi_bus {
+	pmic@2 {
+		compatible = "qcom,pm8150b", "qcom,spmi-pmic";
+		reg = <0x2 SPMI_USID>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		battery@4000 {
+			compatible = "dby,pm8150b-fg-readonly";
+			reg = <0x4000>, <0x4100>;
+		};
+	};
+};
+
+/* Project SD I/O voltage adjustment. See provenance.md. */
+&vdd_io_sd { regulator-min-microvolt = <1800000>; };
+&sdhc_2 { /delete-property/ no-1-8-v; };
+
+/* Project panel-to-backlight reference. See provenance.md. */
+
+&i2c11 {
+	rt8555_backlight: backlight@31 {
+	};
+};
+
+&mdss_dsi0 {
+	panel@0 {
+		backlight = <&rt8555_backlight>;
+	};
+};
+
+/* Project GPU bring-up. See provenance.md. */
+/* GPU test DT only; defaults follow the earlier display/backlight baseline.
+ * Nodes and ZAP path copied from the earlier offline GPU draft.
+ */
+
+/* The existing speed_bin cell refers to this disabled provider.
+ * GPU only reads the cell; this draft does not program any fuse.
+ */
+&qfprom {
+	status = "okay";
+};
+
+&gpucc {
+	status = "okay";
+};
+
+&adreno_smmu {
+	status = "okay";
+};
+
+&gmu {
+	status = "okay";
+};
+
+&gpu {
+	status = "okay";
+};
+
+&gpu_zap_shader {
+	memory-region = <&dby_gpu_zap_mem>;
+	firmware-name = "qcom/sm8250/huawei/dby-w09/a650_zap.elf";
+};
+
+/* LLCC remains as in the earlier display baseline (disabled): a6xx_llc_slices_init accepts error
+ * pointers and cache activation is optional. Enabling its existing node can
+ * be evaluated separately; it is not necessary for this minimal draft.
+ */
+
+/* Project temporary display-hold removal. See provenance.md. */
+
+/delete-node/ &{/display-hold};
+
+/* Project IPCC mailbox enablement. See provenance.md. */
+
+&{/soc@0/mailbox@408000} {
+	status = "okay";
+};
+
+/* Project THP touch wiring. See provenance.md. */
+/* Offline TF6 candidate; no automatic THP module load or firmware transfer. */
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/* The baseline already has a legacy touch node; remove reset ownership. */
+/delete-node/ &{/soc@0/pinctrl@f100000/touch-reset-default-state};
+
+&qupv3_id_2 { status = "okay"; };
+
+&mdss_dsi0 {
+	thp_panel: panel@0 { };
+};
+
+&tlmm {
+	thp_irq_default: thp-irq-default-state {
+		pins = "gpio39";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+};
+
+&spi14 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&qup_spi14_cs &qup_spi14_data_clk>;
+
+	touchscreen@0 {
+		/delete-property/ reset-gpios;
+		/delete-property/ firmware-name;
+		compatible = "novatek,nt36523-thp";
+		reg = <0>;
+		spi-max-frequency = <16000000>;
+		/* CPOL/CPHA absent: mode 0; SPI core defaults to 8 bits per word. */
+		interrupts-extended = <&tlmm 39 IRQ_TYPE_EDGE_FALLING>;
+		panel = <&thp_panel>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&thp_irq_default>;
+	};
+};
+
+/* Project USB integration; IRQ declaration from upstream pm8150b.dtsi. */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/usb/pd.h>
+
+&{/soc@0/spmi@c440000/pmic@2} {
+    dby_usb_vbus: usb-vbus-regulator@1100 {
+        compatible = "qcom,pm8150b-vbus-reg";
+        reg = <0x1100>;
+        status = "okay";
+        regulator-min-microamp = <500000>;
+        regulator-max-microamp = <500000>;
+    };
+    typec@1500 {
+        compatible = "qcom,pm8150b-typec";
+        reg = <0x1500>, <0x1700>;
+        status = "okay";
+			interrupts = <0x2 0x15 0x00 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x15 0x01 IRQ_TYPE_EDGE_BOTH>,
+				     <0x2 0x15 0x02 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x15 0x03 IRQ_TYPE_EDGE_BOTH>,
+				     <0x2 0x15 0x04 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x15 0x05 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x15 0x06 IRQ_TYPE_EDGE_BOTH>,
+				     <0x2 0x15 0x07 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x00 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x01 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x02 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x03 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x04 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x05 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x06 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x17 0x07 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "or-rid-detect-change",
+					  "vpd-detect",
+					  "cc-state-change",
+					  "vconn-oc",
+					  "vbus-change",
+					  "attach-detach",
+					  "legacy-cable-detect",
+					  "try-snk-src-detect",
+					  "sig-tx",
+					  "sig-rx",
+					  "msg-tx",
+					  "msg-rx",
+					  "msg-tx-failed",
+					  "msg-tx-discarded",
+					  "msg-rx-discarded",
+					  "fr-swap";
+        vdd-pdphy-supply = <&usb_l2a>;
+        connector {
+            compatible = "usb-c-connector";
+            label = "USB-C";
+            power-role = "dual";
+            data-role = "dual";
+            try-power-role = "sink";
+            vbus-supply = <&dby_usb_vbus>;
+            source-pdos = <PDO_FIXED(5000, 500, PDO_FIXED_DUAL_ROLE |
+                           PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)>;
+            sink-pdos = <PDO_FIXED(5000, 500, PDO_FIXED_DUAL_ROLE |
+                         PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)>;
+            op-sink-microwatt = <2500000>;
+            ports {
+                #address-cells = <1>;
+                #size-cells = <0>;
+                port@0 {
+                    reg = <0>;
+                    dby_connector_endpoint: endpoint {
+                        remote-endpoint = <&dby_usb_endpoint>;
+                    };
+                };
+            };
+        };
+    };
+};
+&{/soc@0/usb@a6f8800/usb@a600000} {
+    dr_mode = "otg";
+    usb-role-switch;
+    ports {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        port@0 {
+            reg = <0>;
+            dby_usb_endpoint: endpoint {
+                remote-endpoint = <&dby_connector_endpoint>;
+            };
+        };
+    };
+};

@@ -1,0 +1,10 @@
+--- a/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
++++ b/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
+@@ -19,6 +19,7 @@
+     oneOf:
+       - items:
+           - enum:
++              - huawei,dby-w09-nt36523
+               - xiaomi,elish-boe-nt36523
+               - xiaomi,elish-csot-nt36523
+           - const: novatek,nt36523

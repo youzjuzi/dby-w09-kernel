@@ -1,0 +1,13 @@
+--- a/drivers/net/wireless/ath/ath11k/qmi.c
++++ b/drivers/net/wireless/ath/ath11k/qmi.c
+@@ -2452,7 +2452,9 @@
+ 	}
+ 
+ 	/* QCA6390/WCN6855 does not support cal data, skip it */
+-	if (bdf_type == ATH11K_QMI_BDF_TYPE_ELF || bdf_type == ATH11K_QMI_BDF_TYPE_REGDB)
++	/* QCA6390 board BDF may be BIN; skip caldata as cnss2 does. */
++	if (bdf_type == ATH11K_QMI_BDF_TYPE_ELF || bdf_type == ATH11K_QMI_BDF_TYPE_REGDB ||
++	    ab->hw_rev == ATH11K_HW_QCA6390_HW20)
+ 		goto out;
+ 
+ 	if (ab->qmi.target.eeprom_caldata) {

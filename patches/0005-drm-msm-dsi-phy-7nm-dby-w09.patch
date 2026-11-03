@@ -1,0 +1,50 @@
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
+@@ -426,11 +426,8 @@
+ 	u32 data;
+ 
+ 	spin_lock_irqsave(&pll->pll_enable_lock, flags);
+-	if (pll->pll_enable_cnt++) {
+-		spin_unlock_irqrestore(&pll->pll_enable_lock, flags);
+-		WARN_ON(pll->pll_enable_cnt == INT_MAX);
+-		return;
+-	}
++	pll->pll_enable_cnt++;
++	WARN_ON(pll->pll_enable_cnt == INT_MAX);
+ 
+ 	data = readl(pll->phy->base + REG_DSI_7nm_PHY_CMN_CTRL_0);
+ 	data |= DSI_7nm_PHY_CMN_CTRL_0_PLL_SHUTDOWNB;
+@@ -500,6 +497,17 @@
+ 	if (pll_7nm->slave)
+ 		dsi_pll_enable_pll_bias(pll_7nm->slave);
+ 
++	/*
++	 * Bonded C-PHY slave lane clocks pass through their own DIV_CTRL_7_4.
++	 * Match the master before PLL start and slave digital reset, as Huawei's
++	 * dsi_pll_7nm.c divider updates also apply to the slave in display tests.
++	 */
++	if (pll_7nm->slave && pll_7nm->phy->cphy_mode) {
++		u32 val = readl(pll_7nm->phy->base + REG_DSI_7nm_PHY_CMN_CLK_CFG0);
++
++		dsi_pll_cmn_clk_cfg0_write(pll_7nm->slave, val);
++	}
++
+ 	/* Start PLL */
+ 	writel(BIT(0), pll_7nm->phy->base + REG_DSI_7nm_PHY_CMN_PLL_CNTRL);
+ 
+@@ -1091,7 +1099,6 @@
+ 	}
+ 
+ 	spin_lock_irqsave(&pll->pll_enable_lock, flags);
+-	pll->pll_enable_cnt = 1;
+ 	/* de-assert digital and pll power down */
+ 	data = DSI_7nm_PHY_CMN_CTRL_0_DIGTOP_PWRDN_B |
+ 	       DSI_7nm_PHY_CMN_CTRL_0_PLL_SHUTDOWNB;
+@@ -1239,7 +1246,6 @@
+ 	writel(0, base + REG_DSI_7nm_PHY_CMN_LANE_CTRL0);
+ 
+ 	spin_lock_irqsave(&pll->pll_enable_lock, flags);
+-	pll->pll_enable_cnt = 0;
+ 	/* Turn off all PHY blocks */
+ 	writel(0x00, base + REG_DSI_7nm_PHY_CMN_CTRL_0);
+ 	spin_unlock_irqrestore(&pll->pll_enable_lock, flags);

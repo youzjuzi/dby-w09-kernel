@@ -1,0 +1,157 @@
+--- a/drivers/gpu/drm/panel/panel-novatek-nt36523.c
++++ b/drivers/gpu/drm/panel/panel-novatek-nt36523.c
+@@ -34,6 +34,11 @@
+ 	struct regulator *vddio;
+ };
+ 
++struct nt36523_reset_step {
++	unsigned int value;
++	unsigned int delay_ms;
++};
++
+ struct panel_desc {
+ 	unsigned int width_mm;
+ 	unsigned int height_mm;
+@@ -47,6 +52,9 @@
+ 	unsigned int num_modes;
+ 	const struct mipi_dsi_device_info dsi_info;
+ 	int (*init_sequence)(struct panel_info *pinfo);
++	int (*off_sequence)(struct panel_info *pinfo);
++	const struct nt36523_reset_step *reset_steps;
++	unsigned int num_reset_steps;
+ 
+ 	bool is_dual_dsi;
+ 	bool has_dcs_backlight;
+@@ -980,8 +988,111 @@
+ 	.has_dcs_backlight = true,
+ };
+ 
++/* Keep the packet type explicit: short and long writes are not interchangeable. */
++struct dby_w09_cmd {
++	u8 type;
++	u8 delay_ms;
++	u8 len;
++	u8 data[6];
++};
++
++/* Owner-generated data; see docs/panel-data.md in dby-w09-kernel. */
++#include "dby-w09-panel-data.h"
++
++static int dby_w09_send(struct panel_info *pinfo,
++			const struct dby_w09_cmd *cmds, size_t count)
++{
++	size_t i;
++	int link;
++
++	for (i = 0; i < count; i++) {
++		for (link = 0; link < ARRAY_SIZE(pinfo->dsi); link++) {
++			struct mipi_dsi_device *dsi = pinfo->dsi[link];
++			struct mipi_dsi_msg msg = {
++				.channel = dsi->channel,
++				.type = cmds[i].type,
++				.flags = MIPI_DSI_MSG_USE_LPM,
++				.tx_len = cmds[i].len,
++				.tx_buf = cmds[i].data,
++			};
++			ssize_t ret;
++
++			if (!dsi->host->ops || !dsi->host->ops->transfer)
++				return -EOPNOTSUPP;
++
++			ret = dsi->host->ops->transfer(dsi->host, &msg);
++			if (ret < 0)
++				return ret;
++		}
++		if (cmds[i].delay_ms)
++			msleep(cmds[i].delay_ms);
++	}
++
++	return 0;
++}
++
++static int dby_w09_init_sequence(struct panel_info *pinfo)
++{
++	return dby_w09_send(pinfo, dby_w09_on, ARRAY_SIZE(dby_w09_on));
++}
++
++static int dby_w09_off_sequence(struct panel_info *pinfo)
++{
++	return dby_w09_send(pinfo, dby_w09_off, ARRAY_SIZE(dby_w09_off));
++}
++
++static const struct nt36523_reset_step dby_w09_reset_steps[] = {
++	{ 1, 5 }, { 0, 5 }, { 1, 5 }, { 0, 20 },
++};
++
++static const struct drm_display_mode dby_w09_mode = {
++	.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
++	.hdisplay = 1600,
++	.hsync_start = 1600 + 44,
++	.hsync_end = 1600 + 44 + 40,
++	.htotal = 1600 + 44 + 40 + 40,
++	.vdisplay = 2560,
++	.vsync_start = 2560 + 2853,
++	.vsync_end = 2560 + 2853 + 4,
++	.vtotal = 2560 + 2853 + 4 + 237,
++};
++
++static const struct panel_desc dby_w09_desc = {
++	.modes = &dby_w09_mode,
++	.num_modes = 1,
++	.dsi_info = {
++		.type = "NT36523",
++		.channel = 0,
++	},
++	.width_mm = 145,
++	.height_mm = 232,
++	.bpc = 8,
++	.lanes = 3,
++	.format = MIPI_DSI_FMT_RGB888,
++	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |
++		      MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM,
++	.init_sequence = dby_w09_init_sequence,
++	.off_sequence = dby_w09_off_sequence,
++	.reset_steps = dby_w09_reset_steps,
++	.num_reset_steps = ARRAY_SIZE(dby_w09_reset_steps),
++	.is_dual_dsi = true,
++	.has_dcs_backlight = false,
++};
++
+ static void nt36523_reset(struct panel_info *pinfo)
+ {
++	unsigned int i;
++
++	if (pinfo->desc->reset_steps) {
++		for (i = 0; i < pinfo->desc->num_reset_steps; i++) {
++			const struct nt36523_reset_step *step = &pinfo->desc->reset_steps[i];
++
++			gpiod_set_value_cansleep(pinfo->reset_gpio, step->value);
++			msleep(step->delay_ms);
++		}
++		return;
++	}
++
+ 	gpiod_set_value_cansleep(pinfo->reset_gpio, 1);
+ 	usleep_range(12000, 13000);
+ 	gpiod_set_value_cansleep(pinfo->reset_gpio, 0);
+@@ -1019,6 +1130,9 @@
+ {
+ 	struct panel_info *pinfo = to_panel_info(panel);
+ 	int i;
++
++	if (pinfo->desc->off_sequence)
++		return pinfo->desc->off_sequence(pinfo);
+ 
+ 	for (i = 0; i < DSI_NUM_MIN + pinfo->desc->is_dual_dsi; i++) {
+ 		struct mipi_dsi_multi_context dsi_ctx = { .dsi = pinfo->dsi[i]};
+@@ -1241,6 +1355,10 @@
+ }
+ 
+ static const struct of_device_id nt36523_of_match[] = {
++	{
++		.compatible = "huawei,dby-w09-nt36523",
++		.data = &dby_w09_desc,
++	},
+ 	{
+ 		.compatible = "lenovo,j606f-boe-nt36523w",
+ 		.data = &j606f_boe_desc,
