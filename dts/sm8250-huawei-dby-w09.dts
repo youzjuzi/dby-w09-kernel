@@ -467,6 +467,7 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 
 /* Project read-only battery gauge integration. See provenance.md. */
 #include <dt-bindings/spmi/spmi.h>
+#include <dt-bindings/iio/qcom,spmi-vadc.h>
 
 &spmi_bus {
 	pmic@2 {
@@ -474,6 +475,43 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 		reg = <0x2 SPMI_USID>;
 		#address-cells = <1>;
 		#size-cells = <0>;
+
+		pm8150b_adc: adc@3100 {
+			compatible = "qcom,spmi-adc5";
+			reg = <0x3100>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			#io-channel-cells = <1>;
+			interrupts = <0x2 0x31 0x0 IRQ_TYPE_EDGE_RISING>;
+			status = "okay";
+
+			channel@2a {
+				reg = <ADC5_BAT_THERM_30K_PU>;
+				label = "bat_therm_30k";
+				qcom,ratiometric;
+				qcom,hw-settle-time = <200>;
+				qcom,pre-scaling = <1 1>;
+			};
+
+			channel@6 {
+				reg = <ADC5_DIE_TEMP>;
+				label = "die_temp";
+				qcom,pre-scaling = <1 1>;
+			};
+
+			channel@9 {
+				reg = <ADC5_CHG_TEMP>;
+				label = "chg_temp";
+				qcom,pre-scaling = <1 1>;
+			};
+		};
+
+		charger@1000 {
+			compatible = "dby,pm8150b-charger";
+			reg = <0x1000>;
+			io-channels = <&pm8150b_adc ADC5_BAT_THERM_30K_PU>;
+			io-channel-names = "batt_therm";
+		};
 
 		battery@4000 {
 			compatible = "dby,pm8150b-fg-readonly";

@@ -25,6 +25,7 @@ The target-file SPDX values below were read from the local upstream Linux 7.2.10
 | [0004-drm-msm-dsi-host-dby-w09.patch](patches/0004-drm-msm-dsi-host-dby-w09.patch) | `drivers/gpu/drm/msm/dsi/dsi_host.c` | `GPL-2.0-only` | Project changes follow GPL-2.0-only. |
 | [0005-drm-msm-dsi-phy-7nm-dby-w09.patch](patches/0005-drm-msm-dsi-phy-7nm-dby-w09.patch) | `drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c` | `GPL-2.0` | Preserve the literal legacy SPDX above; project adaptation follows GPL version 2 only. Count and divider sources are separately described below. |
 | [0006-ath11k-qca6390-skip-caldata.patch](patches/0006-ath11k-qca6390-skip-caldata.patch) | `drivers/net/wireless/ath/ath11k/qmi.c` | `BSD-3-Clause-Clear` | Project changes follow BSD-3-Clause-Clear; not GPL-only. |
+| [0007-iio-adc-qcom-spmi-adc5-add-bat-therm-30k.patch](patches/0007-iio-adc-qcom-spmi-adc5-add-bat-therm-30k.patch) | `drivers/iio/adc/qcom-spmi-adc5.c` | `GPL-2.0` | Project channel-table addition, preserving the upstream SPDX and standard voltage conversion. Temperature interpretation is not part of this patch. |
 
 0005 has two distinct source chains: its PLL-count adaptation follows Neil Armstrong's upstream commit and subsequent revert linked above; its divider synchronization follows the downstream `dsi_pll_7nm.c` reference, whose GPL-2.0-only notice and archive-member identity were checked locally. The downstream download/release provenance remains unresolved. The target's literal `GPL-2.0` identifier is retained in this table rather than silently rewritten.
 

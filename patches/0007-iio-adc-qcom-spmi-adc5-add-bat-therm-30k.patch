@@ -1,0 +1,22 @@
+From: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+Subject: [PATCH] iio: adc: qcom-spmi-adc5: expose 30K battery thermistor voltage
+
+Expose the PM8150B battery thermistor channel with a 30K pull-up as
+processed voltage for DBY-W09. Thermistor characteristics are board
+specific; do not apply the existing 100K thermistor temperature table.
+Reuse the standard ADC5 conversion and voltage scaling paths unchanged.
+
+SPDX-License-Identifier: GPL-2.0
+Signed-off-by: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+---
+--- a/drivers/iio/adc/qcom-spmi-adc5.c
++++ b/drivers/iio/adc/qcom-spmi-adc5.c
+@@ -542,6 +542,8 @@
+ 					SCALE_HW_CALIB_DEFAULT)
+ 	[ADC5_XO_THERM_100K_PU]	= ADC5_CHAN_TEMP("xo_therm", 0,
+ 					SCALE_HW_CALIB_XOTHERM)
++	[ADC5_BAT_THERM_30K_PU]	= ADC5_CHAN_VOLT("bat_therm_30k", 0,
++					SCALE_HW_CALIB_DEFAULT)
+ 	[ADC5_BAT_ID_100K_PU]	= ADC5_CHAN_TEMP("bat_id", 0,
+ 					SCALE_HW_CALIB_DEFAULT)
+ 	[ADC5_AMUX_THM1_100K_PU] = ADC5_CHAN_TEMP("amux_thm1_100k_pu", 0,
