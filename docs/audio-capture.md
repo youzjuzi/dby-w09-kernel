@@ -1,14 +1,14 @@
 # Experimental capture board tree
 
-板载录音：实验性显式启动，两路模拟麦克风已在一台设备验证 (H + R, 2026-11-06)；四路录音、桌面集成与喇叭仍未验证 (U)。The topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree. No playback link or speaker amplifier is enabled; WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain device-tested board parameters.
+板载录音：实验性显式启动，四路模拟麦克风同时录音已在一台设备验证 (H + R, 2026-11-06)；物理麦克风映射、桌面集成与喇叭仍未验证 (U)。The topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree. No playback link or speaker amplifier is enabled; WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain device-tested board parameters.
 
 The private memory include already reserves the ADSP region. The board tree restores its memory-region reference after replacing upstream reserved-memory. The relocatable MDT uses segment offsets within that region; no new memory carveout is created. DMIC routes remain from the earlier capture topology, alongside the eight analog routing pairs; retaining them does not claim digital microphone hardware is present. VA uses the previously tested 2.4 MHz setting, not a claim that the stock VA property itself has that value.
 
 Audio-only phandles occupy a separate fixed range to preserve unrelated property bytes. The DTB comparison test rejects every non-audio raw property change, including charger, display, input and radio changes; both baseline and candidate retain 36 dtc warnings. This is not dt-schema validation.
 
-耳机检测基础设施已初始化；3.5 mm 接口是否存在未验证。On explicit startup, the unchanged codec probe configures HPH gain/HD2, reference-buffer and surge-protection registers; MBHC allocates state/interrupts, and the machine driver creates a jack and starts detection. No claim of zero headphone activity is made. No additional headset jack/aux-devs route is described in DT. Two capture channels are the unmodified backend limit.
+耳机检测基础设施已初始化；3.5 mm 接口是否存在未验证。On explicit startup, the unchanged codec probe configures HPH gain/HD2, reference-buffer and surge-protection registers; MBHC allocates state/interrupts, and the machine driver creates a jack and starts detection. No claim of zero headphone activity is made. No additional headset jack/aux-devs route is described in DT.
 
-Use the matching hub package (`20261102-11`) with explicit startup and coldplug blacklists. Merely enabling these nodes without that packaging policy is not the tested default. On one tablet (2026-11-06, H + R), default boot left ADSP stopped, explicit startup brought ADSP/APR and `sm8250 - DBY-W09` up, a 12-second 48 kHz S16_LE capture recorded real signal on channels 1/2 (channels 3/4 all zero), and reboot restored the stopped default. Four-channel capture, desktop UCM integration and speakers remain U.
+Use the matching hub package (`20261102-12`) with explicit startup and coldplug blacklists. Merely enabling these nodes without that packaging policy is not the tested default. On one tablet (2026-11-06, H + R), default boot left ADSP stopped, explicit startup brought ADSP/APR and `sm8250 - DBY-W09` up, a 12-second 48 kHz S16_LE 4-channel capture recorded real signal simultaneously on channels 1–4, and reboot restored the stopped default. Desktop UCM integration and speakers remain U.
 
 Host-only comparison:
 
@@ -16,14 +16,16 @@ Host-only comparison:
 python3 -B tests/test-audio-dtb.py /path/to/control.dtb /path/to/capture.dtb
 ```
 
-## Four-channel capture candidate (O; hardware U)
+## Four-channel capture (H + R, 2026-11-06)
 
 Patch `0008` preserves the negotiated channel interval only for
 `TX_CODEC_DMA_TX_3`. The AFE and TX macro DAIs allow 1–8 channels and
 WCD938x capture allows 1–4, so their intersection permits four channels.
 The machine driver's hardcoded fixup has no DT property override.
 All other backends retain stereo; every backend retains 48 kHz/S16_LE.
-The external `snd-soc-sm8250` module was built and checked offline (O).
-This supplements the historical six-patch full build without rebuilding
-Image or changing DTB. Four simultaneous microphone signals remain
-unverified (U); the earlier two-channel device result is unchanged.
+The externally rebuilt `snd-soc-sm8250` module in package `20261102-12`
+supplements the historical six-patch full build without rebuilding Image
+or changing DTB, and was validated on one tablet (H + R, 2026-11-06) with
+real signal on all four capture channels (`rms_dbfs` −31.79 / −47.82 /
+−29.97 / −32.63). Physical microphone-to-channel mapping, desktop UCM
+integration and speakers remain U.
