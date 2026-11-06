@@ -78,3 +78,7 @@ This is an independent, unofficial device-porting project. It is not affiliated 
 An already unlocked bootloader is required for the integrated system. Flashing replaces Recovery, and the modified image does not match the original AVB digest. An incorrect image or operation can make the device unbootable or Recovery unusable. Installation erases the selected SD card. Keep and verify your own stock rollback image, and restore stock Recovery before a factory reset. The software is provided as is, without warranty. This is a source repository; follow the hub's [installation guide](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.md) for integration prerequisites and risks.
 
 Source licences follow the original files and the [per-patch table](THIRD_PARTY.md). See [LICENSE](LICENSE), `dts/NOTICE` and `LICENSES/`. Owner-extracted data is not licensed by these tools.
+
+## Experimental onboard capture
+
+板载录音：离线构建，实验性，未验证 (U)。The capture-only board topology is described in [audio notes](docs/audio-capture.md); it does not establish microphone operation.

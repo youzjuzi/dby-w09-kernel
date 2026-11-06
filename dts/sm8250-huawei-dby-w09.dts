@@ -715,3 +715,190 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
         };
     };
 };
+
+/* Experimental capture topology. Sound/DAI and WCD supply structure follow
+ * upstream sm8250-mtp.dts; board reset, SoundWire ports, micbias and AMIC
+ * routing retain device-tested board parameters from the stock DT investigation.
+ * No playback DAI, speaker amplifier or WSA macro is enabled.
+ */
+dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
+&adsp {
+    status = "okay";
+    memory-region = <&dby_adsp_mem>;
+    firmware-name = "qcom/dby-w09/adsp.mdt";
+};
+&{/smp2p-adsp} { status = "okay"; };
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
+
+&lpass_tlmm {
+    status = "okay";
+    dmic23_active: dmic23-active-state {
+        clk-pins {
+            pins = "gpio8";
+            function = "dmic2_clk";
+            drive-strength = <8>;
+            output-high;
+        };
+        data-pins {
+            pins = "gpio9";
+            function = "dmic2_data";
+            drive-strength = <8>;
+            input-enable;
+        };
+    };
+    dmic23_sleep: dmic23-sleep-state {
+        clk-pins {
+            pins = "gpio8";
+            function = "dmic2_clk";
+            drive-strength = <2>;
+            bias-disable;
+            output-low;
+        };
+        data-pins {
+            pins = "gpio9";
+            function = "dmic2_data";
+            drive-strength = <2>;
+            bias-pull-down;
+            input-enable;
+        };
+    };
+};
+
+&vamacro {
+    status = "okay";
+    qcom,dmic-sample-rate = <600000>;
+    pinctrl-names = "default", "sleep";
+    pinctrl-0 = <&dmic01_active &dmic23_active>;
+    pinctrl-1 = <&dmic01_sleep &dmic23_sleep>;
+};
+
+&sound {
+    compatible = "qcom,sm8250-sndcard";
+    model = "DBY-W09";
+    audio-routing = "DMIC0 Pin", "vdd-micb",
+                    "DMIC1 Pin", "vdd-micb",
+                    "DMIC2 Pin", "vdd-micb",
+                    "DMIC3 Pin", "vdd-micb";
+    mm1-dai-link {
+        link-name = "MultiMedia1";
+        cpu { sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA1>; };
+    };
+    va-dai-link {
+        link-name = "VA Capture";
+        cpu { sound-dai = <&q6afedai VA_CODEC_DMA_TX_0>; };
+        platform { sound-dai = <&q6routing>; };
+        codec { sound-dai = <&vamacro 0>; };
+    };
+};
+
+&q6asmdai {
+    dai@0 { reg = <MSM_FRONTEND_DAI_MULTIMEDIA1>; };
+};
+
+&q6afedai {
+    dai@6e { reg = <VA_CODEC_DMA_TX_0>; };
+};
+/ {
+    vph_pwr: vph-pwr-regulator {
+        compatible = "regulator-fixed";
+        regulator-name = "vph_pwr";
+        regulator-min-microvolt = <3700000>;
+        regulator-max-microvolt = <3700000>;
+    };
+    wcd938x: audio-codec {
+        compatible = "qcom,wcd9380-codec";
+        reset-gpios = <&tlmm 32 GPIO_ACTIVE_LOW>;
+        vdd-buck-supply = <&wifi_s4a>;
+        vdd-rxtx-supply = <&wifi_s4a>;
+        vdd-io-supply = <&wifi_s4a>;
+        vdd-mic-bias-supply = <&vreg_bob>;
+        qcom,micbias1-microvolt = <1800000>;
+        qcom,micbias2-microvolt = <1800000>;
+        qcom,micbias3-microvolt = <1800000>;
+        qcom,micbias4-microvolt = <1800000>;
+        qcom,mbhc-buttons-vthreshold-microvolt = <75000 150000 237000 500000 500000 500000 500000 500000>;
+        qcom,mbhc-headset-vthreshold-microvolt = <1700000>;
+        qcom,mbhc-headphone-vthreshold-microvolt = <50000>;
+        qcom,rx-device = <&wcd_rx>;
+        qcom,tx-device = <&wcd_tx>;
+        #sound-dai-cells = <1>;
+    };
+};
+&{/soc@0/rsc@18200000/regulators} {
+    vdd-bob-supply = <&vph_pwr>;
+    vreg_bob: bob {
+        regulator-name = "vreg_bob";
+        regulator-min-microvolt = <3008000>;
+        regulator-max-microvolt = <3960000>;
+        regulator-initial-mode = <RPMH_REGULATOR_MODE_AUTO>;
+    };
+};
+&rxmacro { status = "okay"; };
+&txmacro { status = "okay"; };
+&swr1 {
+    status = "okay";
+    wcd_rx: wcd9380-rx@0,4 {
+        compatible = "sdw20217010d00";
+        reg = <0 4>;
+        qcom,rx-port-mapping = <1 2 3 4 5>;
+    };
+};
+&swr2 {
+    status = "okay";
+    wcd_tx: wcd9380-tx@0,3 {
+        compatible = "sdw20217010d00";
+        reg = <0 3>;
+        qcom,tx-port-mapping = <2 3 4 5>;
+    };
+};
+&sound {
+    audio-routing = "DMIC0 Pin", "vdd-micb", "DMIC1 Pin", "vdd-micb",
+                    "DMIC2 Pin", "vdd-micb", "DMIC3 Pin", "vdd-micb",
+                    "DMIC0 Pin", "MIC BIAS3", "DMIC1 Pin", "MIC BIAS3",
+                    "DMIC2 Pin", "MIC BIAS1", "DMIC3 Pin", "MIC BIAS1";
+    wcd-capture-dai-link {
+        link-name = "WCD Capture";
+        cpu { sound-dai = <&q6afedai TX_CODEC_DMA_TX_3>; };
+        codec { sound-dai = <&wcd938x 1>, <&swr2 0>, <&txmacro 0>; };
+        platform { sound-dai = <&q6routing>; };
+    };
+};
+&q6afedai { dai@78 { reg = <TX_CODEC_DMA_TX_3>; }; };
+&vamacro { qcom,dmic-sample-rate = <2400000>; };
+&sound {
+    audio-routing =
+        "DMIC0 Pin", "vdd-micb",
+        "DMIC1 Pin", "vdd-micb",
+        "DMIC2 Pin", "vdd-micb",
+        "DMIC3 Pin", "vdd-micb",
+        "DMIC0 Pin", "MIC BIAS3",
+        "DMIC1 Pin", "MIC BIAS3",
+        "DMIC2 Pin", "MIC BIAS1",
+        "DMIC3 Pin", "MIC BIAS1",
+        "AMIC1", "MIC BIAS3",
+        "AMIC3", "MIC BIAS4",
+        "AMIC4", "MIC BIAS1",
+        "AMIC5", "MIC BIAS1",
+        "TX SWR_ADC0", "ADC1_OUTPUT",
+        "TX SWR_ADC1", "ADC2_OUTPUT",
+        "TX SWR_ADC2", "ADC3_OUTPUT",
+        "TX SWR_ADC3", "ADC4_OUTPUT";
+};
+
+/* Reserve audio-only handles outside the baseline range so enabling capture
+ * does not renumber unrelated display, input, radio or charger references. */
+&{/reserved-memory/pil_adsp_region@8a100000} { phandle = <0x1000>; };
+&{/soc@0/soundwire@3210000/wcd9380-rx@0,4} { phandle = <0x1001>; };
+&{/soc@0/soundwire@3230000} { phandle = <0x1002>; };
+&{/soc@0/soundwire@3230000/wcd9380-tx@0,3} { phandle = <0x1003>; };
+&{/soc@0/pinctrl@33c0000/dmic01-active-state} { phandle = <0x1004>; };
+&{/soc@0/pinctrl@33c0000/dmic01-sleep-state} { phandle = <0x1005>; };
+&{/soc@0/pinctrl@33c0000/dmic23-active-state} { phandle = <0x1006>; };
+&{/soc@0/pinctrl@33c0000/dmic23-sleep-state} { phandle = <0x1007>; };
+&{/soc@0/remoteproc@17300000/glink-edge/apr/service@4/dais} { phandle = <0x1008>; };
+&{/soc@0/remoteproc@17300000/glink-edge/apr/service@7/dais} { phandle = <0x1009>; };
+&{/soc@0/remoteproc@17300000/glink-edge/apr/service@8/routing} { phandle = <0x100a>; };
+&{/soc@0/rsc@18200000/regulators/bob} { phandle = <0x100b>; };
+&{/vph-pwr-regulator} { phandle = <0x100c>; };
+&{/audio-codec} { phandle = <0x100d>; };
