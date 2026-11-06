@@ -27,6 +27,8 @@ The target-file SPDX values below were read from the local upstream Linux 7.2.10
 | [0006-ath11k-qca6390-skip-caldata.patch](patches/0006-ath11k-qca6390-skip-caldata.patch) | `drivers/net/wireless/ath/ath11k/qmi.c` | `BSD-3-Clause-Clear` | Project changes follow BSD-3-Clause-Clear; not GPL-only. |
 | [0007-iio-adc-qcom-spmi-adc5-add-bat-therm-30k.patch](patches/0007-iio-adc-qcom-spmi-adc5-add-bat-therm-30k.patch) | `drivers/iio/adc/qcom-spmi-adc5.c` | `GPL-2.0` | Project channel-table addition, preserving the upstream SPDX and standard voltage conversion. Temperature interpretation is not part of this patch. |
 | [0008-asoc-qcom-sm8250-preserve-tx-codec-dma-channels.patch](patches/0008-asoc-qcom-sm8250-preserve-tx-codec-dma-channels.patch) | `sound/soc/qcom/sm8250.c` | `GPL-2.0` | Project capture-channel fixup, preserving the upstream SPDX and standard ASoC negotiation. |
+| [0009](patches/0009-asoc-qcom-qdsp6-q6afe-propagate-tdm-dt-config.patch) | `sound/soc/qcom/qdsp6/q6afe.h`, `q6afe.c`, `q6afe-dai.c` | `GPL-2.0` | Project DT-to-APR field propagation; existing notices retained. |
+| [0010](patches/0010-asoc-qcom-sm8250-add-primary-tdm-rx0-support.patch) | `sound/soc/qcom/sm8250.c` | `GPL-2.0` | Project Primary TDM startup, shutdown, slot and channel-map support after 0008. |
 
 0005 has two distinct source chains: its PLL-count adaptation follows Neil Armstrong's upstream commit and subsequent revert linked above; its divider synchronization follows the downstream `dsi_pll_7nm.c` reference, whose GPL-2.0-only notice and archive-member identity were checked locally. The downstream download/release provenance remains unresolved. The target's literal `GPL-2.0` identifier is retained in this table rather than silently rewritten.
 

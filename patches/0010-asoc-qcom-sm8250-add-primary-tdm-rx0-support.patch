@@ -1,0 +1,77 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] 0010-asoc-qcom-sm8250-add-primary-tdm-rx0-support.patch
+
+SPDX-License-Identifier: GPL-2.0-only
+
+--- a/sound/soc/qcom/sm8250.c
++++ b/sound/soc/qcom/sm8250.c
+@@ -64,8 +64,11 @@
+ 					SNDRV_PCM_HW_PARAM_CHANNELS);
+ 	struct snd_mask *fmt = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+ 
++	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
++
+ 	rate->min = rate->max = 48000;
+-	if (snd_soc_rtd_to_cpu(rtd, 0)->id != TX_CODEC_DMA_TX_3)
++	if (cpu_dai->id != TX_CODEC_DMA_TX_3 &&
++	    cpu_dai->id != PRIMARY_TDM_RX_0)
+ 		channels->min = channels->max = 2;
+ 	snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
+ 
+@@ -81,6 +84,10 @@
+ 	struct snd_soc_dai *codec_dai = snd_soc_rtd_to_codec(rtd, 0);
+ 
+ 	switch (cpu_dai->id) {
++	case PRIMARY_TDM_RX_0:
++		return snd_soc_dai_set_sysclk(cpu_dai,
++			Q6AFE_LPASS_CLK_ID_PRI_TDM_IBIT,
++			6144000, SNDRV_PCM_STREAM_PLAYBACK);
+ 	case PRIMARY_MI2S_RX:
+ 		codec_dai_fmt |= SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;
+ 		snd_soc_dai_set_sysclk(cpu_dai,
+@@ -136,11 +143,44 @@
+ 	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
+ 
+ 	return qcom_snd_sdw_hw_free(substream, &data->stream_prepared[cpu_dai->id]);
++}
++
++static int sm8250_snd_hw_params(struct snd_pcm_substream *substream,
++				struct snd_pcm_hw_params *params)
++{
++	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
++	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
++	static const unsigned int slot_offset[] = { 0, 4, 8, 12 };
++	unsigned int channels = params_channels(params);
++	int ret;
++
++	if (cpu_dai->id != PRIMARY_TDM_RX_0)
++		return 0;
++	if (channels < 1 || channels > ARRAY_SIZE(slot_offset))
++		return -EINVAL;
++	ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0,
++				     GENMASK(channels - 1, 0), 4, 32);
++	if (ret < 0)
++		return ret;
++	return snd_soc_dai_set_channel_map(cpu_dai, 0, NULL, channels,
++					 (unsigned int *)slot_offset);
++}
++
++static void sm8250_snd_shutdown(struct snd_pcm_substream *substream)
++{
++	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
++	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
++
++	if (cpu_dai->id == PRIMARY_TDM_RX_0)
++		snd_soc_dai_set_sysclk(cpu_dai, Q6AFE_LPASS_CLK_ID_PRI_TDM_IBIT,
++				       0, SNDRV_PCM_STREAM_PLAYBACK);
++	qcom_snd_sdw_shutdown(substream);
+ }
+ 
+ static const struct snd_soc_ops sm8250_be_ops = {
+ 	.startup = sm8250_snd_startup,
+-	.shutdown = qcom_snd_sdw_shutdown,
++	.shutdown = sm8250_snd_shutdown,
++	.hw_params = sm8250_snd_hw_params,
+ 	.hw_free = sm8250_snd_hw_free,
+ 	.prepare = sm8250_snd_prepare,
+ };

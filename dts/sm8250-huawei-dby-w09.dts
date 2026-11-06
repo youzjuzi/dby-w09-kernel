@@ -902,3 +902,111 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 &{/soc@0/rsc@18200000/regulators/bob} { phandle = <0x100b>; };
 &{/vph-pwr-regulator} { phandle = <0x100c>; };
 &{/audio-codec} { phandle = <0x100d>; };
+
+/* Primary TDM speaker transport; codec power remains explicitly locked. */
+&gpi_dma0 { status = "okay"; };
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+	tfa9874_0: tfa9874@34 {
+		compatible = "huawei,dby-tfa9874";
+		reg = <0x34>;
+		reset-gpios = <&tlmm 109 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&tfa9874_rst_default>;
+		huawei,pa-index = <0>;
+		sound-name-prefix = "SpkrMono0";
+		#sound-dai-cells = <0>;
+	};
+
+	tfa9874_1: tfa9874@35 {
+		compatible = "huawei,dby-tfa9874";
+		reg = <0x35>;
+		huawei,pa-index = <1>;
+		sound-name-prefix = "SpkrMono1";
+		#sound-dai-cells = <0>;
+	};
+
+	tfa9874_2: tfa9874@36 {
+		compatible = "huawei,dby-tfa9874";
+		reg = <0x36>;
+		huawei,pa-index = <2>;
+		sound-name-prefix = "SpkrMono2";
+		#sound-dai-cells = <0>;
+	};
+
+	tfa9874_3: tfa9874@37 {
+		compatible = "huawei,dby-tfa9874";
+		reg = <0x37>;
+		huawei,pa-index = <3>;
+		sound-name-prefix = "SpkrMono3";
+		#sound-dai-cells = <0>;
+	};
+};
+
+&tlmm {
+	pri_tdm_active: pri-tdm-active-state {
+		sck-pins {
+			pins = "gpio138";
+			function = "mi2s0_sck";
+			drive-strength = <8>;
+			bias-disable;
+		};
+		data0-pins {
+			pins = "gpio139";
+			function = "mi2s0_data0";
+			drive-strength = <8>;
+			bias-disable;
+		};
+		data1-pins {
+			pins = "gpio140";
+			function = "mi2s0_data1";
+			drive-strength = <8>;
+			bias-disable;
+		};
+		ws-pins {
+			pins = "gpio141";
+			function = "mi2s0_ws";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+	tfa9874_rst_default: tfa9874-rst-default-state {
+		pins = "gpio109";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+		output-low;
+	};
+};
+
+&q6afedai {
+	dai@24 {
+		reg = <PRIMARY_TDM_RX_0>;
+		qcom,tdm-sync-mode = <2>;
+		qcom,tdm-sync-src = <1>;
+		qcom,tdm-data-out = <0>;
+		qcom,tdm-invert-sync = <1>;
+		qcom,tdm-data-delay = <1>;
+		qcom,tdm-data-align = <0>;
+	};
+};
+
+&sound {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pri_tdm_active>;
+	primary-tdm-playback-dai-link {
+		link-name = "Primary TDM0 Playback";
+		cpu { sound-dai = <&q6afedai PRIMARY_TDM_RX_0>; };
+		platform { sound-dai = <&q6routing>; };
+		codec { sound-dai = <&tfa9874_0>, <&tfa9874_1>, <&tfa9874_2>, <&tfa9874_3>; };
+	};
+};
+&{/soc@0/pinctrl@f100000/pri-tdm-active-state} { phandle = <0x100e>; };
+&{/soc@0/pinctrl@f100000/tfa9874-rst-default-state} { phandle = <0x100f>; };
+&{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@34} { phandle = <0x1010>; };
+&{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@35} { phandle = <0x1011>; };
+&{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@36} { phandle = <0x1012>; };
+&{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@37} { phandle = <0x1013>; };

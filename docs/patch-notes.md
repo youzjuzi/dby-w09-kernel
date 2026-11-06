@@ -38,3 +38,20 @@ The externally rebuilt `snd-soc-sm8250` module supplements the historical
 six-patch full build without rebuilding Image or changing DTB, and was
 validated on one tablet (H + R, 2026-11-06, bundle `20261102-12`) with
 real simultaneous signal on all four analog microphone channels.
+
+## A3a Primary TDM speaker transport (O)
+
+Patch 0009 carries DT data-output, sync inversion and data delay fields through
+q6afe-dai into the q6afe APR TDM configuration. Patch 0010 applies after 0008,
+preserves negotiated Primary TDM0 channels, sets a 6.144 MHz bit clock, and
+configures four 32-bit slots with byte offsets 0, 4, 8, 12. Shutdown disables that
+clock and retains SoundWire cleanup. The four-microphone fix remains intact.
+
+The board enables GPI DMA0 and I2C3, four board-specific TFA9874 codecs, the shared
+active-high reset on GPIO109, and Primary TDM pins 138..141. New phandles occupy
+0x100e..0x1013. The DTB test checks these values and restricts raw property changes
+to the audio allowlist, including only the DMA status property. WSA stays disabled.
+
+The companion amplifier module defaults locked off. UCM2 remains microphone-only.
+Host patch replay, compilation and DT comparison are O; I2C probe, TDM timing,
+speaker output and coexistence with capture still require owner device testing (U).

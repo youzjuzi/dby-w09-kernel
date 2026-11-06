@@ -35,12 +35,16 @@ def parse(blob):
         end += 16
     return nodes, blob[h[4]:end+16]
 
-ROOTS = ('/audio-codec', '/vph-pwr-regulator', '/sound',
+ROOTS = ('/soc@0/geniqup@9c0000/i2c@98c000',
+         '/soc@0/pinctrl@f100000/pri-tdm-active-state',
+         '/soc@0/pinctrl@f100000/tfa9874-rst-default-state',
+         '/audio-codec', '/vph-pwr-regulator', '/sound',
          '/soc@0/remoteproc@17300000', '/soc@0/pinctrl@33c0000',
          '/soc@0/codec@3370000', '/soc@0/rxmacro@3200000',
          '/soc@0/txmacro@3220000', '/soc@0/soundwire@3210000',
          '/soc@0/soundwire@3230000', '/soc@0/rsc@18200000/regulators/bob')
-EXACT = {('/reserved-memory/pil_adsp_region@8a100000', 'phandle'),
+EXACT = {('/soc@0/dma-controller@900000', 'status'),
+         ('/reserved-memory/pil_adsp_region@8a100000', 'phandle'),
          ('/smp2p-adsp', 'status'),
          ('/soc@0/rsc@18200000/regulators', 'vdd-bob-supply')}
 
@@ -64,7 +68,50 @@ def compare(before, after):
     assert b['/soc@0/remoteproc@17300000']['firmware-name'] == b'qcom/dby-w09/adsp.mdt\0'
     assert b['/soc@0/codec@3370000']['qcom,dmic-sample-rate'] == struct.pack('>I', 2400000)
     assert 'aux-devs' not in b['/sound']
+    if '/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@34' in b:
+        speakers(b)
     print('PASS: audio-only raw property changes:', len(changes))
+
+def speakers(nodes):
+    cell = lambda *v: struct.pack('>' + 'I' * len(v), *v)
+    bus = '/soc@0/geniqup@9c0000/i2c@98c000'
+    assert nodes[bus]['status'] == b'okay\0'
+    assert nodes[bus]['clock-frequency'] == cell(400000)
+    assert nodes['/soc@0/dma-controller@900000']['status'] == b'okay\0'
+    tlmm = '/soc@0/pinctrl@f100000'
+    for i in range(4):
+        chip = nodes[f'{bus}/tfa9874@{0x34+i:x}']
+        for prop, value in [('reg', cell(0x34+i)), ('huawei,pa-index', cell(i)),
+                            ('#sound-dai-cells', cell(0)), ('phandle', cell(0x1010+i)),
+                            ('compatible', b'huawei,dby-tfa9874\0'),
+                            ('sound-name-prefix', f'SpkrMono{i}\0'.encode())]:
+            assert chip[prop] == value, prop
+        if i == 0:
+            assert chip['reset-gpios'] == nodes[tlmm]['phandle'] + cell(109, 0)
+            assert chip['pinctrl-0'] == cell(0x100f)
+        else:
+            assert 'reset-gpios' not in chip
+    pins = tlmm + '/pri-tdm-active-state'
+    assert nodes[pins]['phandle'] == cell(0x100e)
+    for i, name in enumerate(('sck', 'data0', 'data1', 'ws')):
+        p = nodes[pins + '/' + name + '-pins']
+        assert p['pins'] == f'gpio{138+i}\0'.encode()
+        assert p['function'] == f'mi2s0_{name}\0'.encode()
+        assert p['drive-strength'] == cell(8) and p['bias-disable'] == b''
+    p = nodes[tlmm + '/tfa9874-rst-default-state']
+    assert p['phandle'] == cell(0x100f) and p['pins'] == b'gpio109\0'
+    assert p['function'] == b'gpio\0' and p['drive-strength'] == cell(2)
+    assert p['output-low'] == p['bias-pull-down'] == b''
+    dai_path, = [p for p in nodes if p.endswith('/dai@24')]
+    assert nodes[dai_path]['reg'] == cell(24)
+    for prop, value in [('sync-mode', 2), ('sync-src', 1), ('data-out', 0),
+                        ('invert-sync', 1), ('data-delay', 1), ('data-align', 0)]:
+        assert nodes[dai_path]['qcom,tdm-' + prop] == cell(value)
+    assert nodes['/sound']['pinctrl-0'] == cell(0x100e)
+    link = '/sound/primary-tdm-playback-dai-link'
+    assert nodes[link]['link-name'] == b'Primary TDM0 Playback\0'
+    assert nodes[link + '/codec']['sound-dai'] == cell(0x1010, 0x1011, 0x1012, 0x1013)
+    assert nodes[link + '/cpu']['sound-dai'] == nodes[dai_path.rsplit('/', 1)[0]]['phandle'] + cell(24)
 
 class AllowlistTests(unittest.TestCase):
     def test_non_audio_rejected(self):

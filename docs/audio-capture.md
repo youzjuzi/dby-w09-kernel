@@ -30,3 +30,20 @@ rebuilding Image or changing DTB, and was validated on one tablet (H + R,
 −31.79 / −47.82 / −29.97 / −32.63) and 4-channel `Internal Microphone`
 discovery in PipeWire/GNOME via hub package `20261102-13`. Physical
 microphone-to-channel mapping and speakers remain U.
+
+## A3a Primary TDM speaker transport (O)
+
+Patch 0009 carries DT data-output, sync inversion and data delay fields through
+q6afe-dai into the q6afe APR TDM configuration. Patch 0010 applies after 0008,
+preserves negotiated Primary TDM0 channels, sets a 6.144 MHz bit clock, and
+configures four 32-bit slots with byte offsets 0, 4, 8, 12. Shutdown disables that
+clock and retains SoundWire cleanup. The four-microphone fix remains intact.
+
+The board enables GPI DMA0 and I2C3, four board-specific TFA9874 codecs, the shared
+active-high reset on GPIO109, and Primary TDM pins 138..141. New phandles occupy
+0x100e..0x1013. The DTB test checks these values and restricts raw property changes
+to the audio allowlist, including only the DMA status property. WSA stays disabled.
+
+The companion amplifier module defaults locked off. UCM2 remains microphone-only.
+Host patch replay, compilation and DT comparison are O; I2C probe, TDM timing,
+speaker output and coexistence with capture still require owner device testing (U).
