@@ -78,3 +78,7 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 运行集成系统需要已经解锁的 Bootloader。刷写会替换 Recovery，修改后的镜像不匹配原 AVB 摘要；错误镜像或操作可能导致设备无法启动或 Recovery 无法使用。写卡会清除所选 SD 卡的数据。先保留并核对自己的原厂回退镜像；恢复出厂前恢复原厂 Recovery。软件按现状提供，无担保。本库仅提供源码，集成前置条件与风险见中心仓库[安装指南](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md)。
 
 源码沿用各文件许可，见[逐补丁许可表](THIRD_PARTY.md)、[LICENSE](LICENSE)、`dts/NOTICE` 和 `LICENSES/`；工具不授予所有者数据的许可。
+
+## 实验性板载录音
+
+显式启用的板载录音拓扑（**H + R**，一台平板，2026-11-06）：配合中心仓库对应设备包（`20261102-11`），开机默认不启动 ADSP；手动两阶段启动后 ADSP／APR 上线、声卡 `sm8250 - DBY-W09` 注册，并在两路模拟麦克风通道录到真信号（未修改机器驱动后端限制下通道 3／4 为全零），重启后恢复默认停止状态。四路同时录音、桌面 UCM 集成与扬声器放音仍为 **U**。详见[音频说明](docs/audio-capture.md)。

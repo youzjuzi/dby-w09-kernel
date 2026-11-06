@@ -1,6 +1,6 @@
 # Experimental capture board tree
 
-板载录音：离线构建，实验性，未验证 (U)。The topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree. No playback link or speaker amplifier is enabled; WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain previously device-tested board parameters; this newly packaged combination is unverified.
+板载录音：实验性显式启动，两路模拟麦克风已在一台设备验证 (H + R, 2026-11-06)；四路录音、桌面集成与喇叭仍未验证 (U)。The topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree. No playback link or speaker amplifier is enabled; WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain device-tested board parameters.
 
 The private memory include already reserves the ADSP region. The board tree restores its memory-region reference after replacing upstream reserved-memory. The relocatable MDT uses segment offsets within that region; no new memory carveout is created. DMIC routes remain from the earlier capture topology, alongside the eight analog routing pairs; retaining them does not claim digital microphone hardware is present. VA uses the previously tested 2.4 MHz setting, not a claim that the stock VA property itself has that value.
 
@@ -8,7 +8,7 @@ Audio-only phandles occupy a separate fixed range to preserve unrelated property
 
 耳机检测基础设施已初始化；3.5 mm 接口是否存在未验证。On explicit startup, the unchanged codec probe configures HPH gain/HD2, reference-buffer and surge-protection registers; MBHC allocates state/interrupts, and the machine driver creates a jack and starts detection. No claim of zero headphone activity is made. No additional headset jack/aux-devs route is described in DT. Two capture channels are the unmodified backend limit.
 
-Use the matching hub package with explicit startup and coldplug blacklists. Merely enabling these nodes without that packaging policy is not the tested default. Device boot, capture signals and coexistence remain U.
+Use the matching hub package (`20261102-11`) with explicit startup and coldplug blacklists. Merely enabling these nodes without that packaging policy is not the tested default. On one tablet (2026-11-06, H + R), default boot left ADSP stopped, explicit startup brought ADSP/APR and `sm8250 - DBY-W09` up, a 12-second 48 kHz S16_LE capture recorded real signal on channels 1/2 (channels 3/4 all zero), and reboot restored the stopped default. Four-channel capture, desktop UCM integration and speakers remain U.
 
 Host-only comparison:
 

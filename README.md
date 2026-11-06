@@ -81,4 +81,4 @@ Source licences follow the original files and the [per-patch table](THIRD_PARTY.
 
 ## Experimental onboard capture
 
-板载录音：离线构建，实验性，未验证 (U)。The capture-only board topology is described in [audio notes](docs/audio-capture.md); it does not establish microphone operation.
+Opt-in onboard capture topology (**H + R**, one tablet, 2026-11-06): with the matching hub package (`20261102-11`), default boot leaves ADSP stopped; explicit two-stage startup brought ADSP/APR up, registered `sm8250 - DBY-W09`, and recorded real signal on two analog microphone channels while channels 3/4 stayed zero under the unmodified two-channel backend limit; reboot returned to the stopped default. Four-channel capture, desktop UCM integration and speakers remain **U**. See [audio notes](docs/audio-capture.md).
