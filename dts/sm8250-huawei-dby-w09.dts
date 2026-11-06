@@ -780,6 +780,10 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
                     "DMIC1 Pin", "vdd-micb",
                     "DMIC2 Pin", "vdd-micb",
                     "DMIC3 Pin", "vdd-micb";
+    mm2-dai-link {
+        link-name = "MultiMedia2";
+        cpu { sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>; };
+    };
     mm1-dai-link {
         link-name = "MultiMedia1";
         cpu { sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA1>; };
@@ -794,6 +798,7 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 
 &q6asmdai {
     dai@0 { reg = <MSM_FRONTEND_DAI_MULTIMEDIA1>; };
+    dai@1 { reg = <MSM_FRONTEND_DAI_MULTIMEDIA2>; };
 };
 
 &q6afedai {

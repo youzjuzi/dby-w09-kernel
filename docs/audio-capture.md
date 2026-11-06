@@ -47,3 +47,13 @@ to the audio allowlist, including only the DMA status property. WSA stays disabl
 The companion amplifier module defaults locked off. UCM2 remains microphone-only.
 Host patch replay, compilation and DT comparison are O; I2C probe, TDM timing,
 speaker output and coexistence with capture still require owner device testing (U).
+
+## A3b separate capture frontend (O)
+
+MultiMedia2 is added as q6asm dai@1 and mm2-dai-link for desktop microphone capture;
+MultiMedia1 remains the stereo speaker frontend. No new phandle is needed. The
+`test-audio-dtb.py --a3b BEFORE AFTER` comparison requires exactly those new nodes
+and byte-identical properties on every existing node, including all phandles.
+Patch 0010 now clamps Primary TDM channels to four and returns EINVAL if the
+negotiated minimum exceeds four; TX_CODEC_DMA_TX_3 retains its earlier negotiation.
+This is host-validated configuration, not a claim of device duplex support.

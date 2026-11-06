@@ -55,3 +55,7 @@ to the audio allowlist, including only the DMA status property. WSA stays disabl
 The companion amplifier module defaults locked off. UCM2 remains microphone-only.
 Host patch replay, compilation and DT comparison are O; I2C probe, TDM timing,
 speaker output and coexistence with capture still require owner device testing (U).
+
+A3b extends 0010's Primary TDM fixup: reject channel minimum greater than four and
+cap maximum at four. The executable harness covers all frontend IDs and channel
+intervals 1..8, including rejection and the unchanged microphone branch (O).

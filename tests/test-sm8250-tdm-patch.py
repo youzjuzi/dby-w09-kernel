@@ -47,6 +47,7 @@ class CaptureFixup(unittest.TestCase):
             self.assertGreater(len(ids), 100)
             harness = r'''
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include "qcom,q6dsp-lpass-ports.h"
 #define SNDRV_PCM_HW_PARAM_RATE 0
@@ -73,12 +74,18 @@ for (unsigned i = 0; i < sizeof(ids)/sizeof(ids[0]); i++)
    for (unsigned bits = 0; bits < 8; bits++) {
     struct snd_soc_pcm_runtime r = { .cpu = { .id = ids[i] } };
     struct snd_pcm_hw_params p = { .intervals = {{8000,192000},{lo,hi}}, .fmt = {bits} };
-    assert(sm8250_be_hw_params_fixup(&r, &p) == 0);
+    int ret = sm8250_be_hw_params_fixup(&r, &p);
+    count++;
+    if (ids[i] == PRIMARY_TDM_RX_0 && lo > 4) {
+     assert(ret == -EINVAL);
+     assert(p.intervals[1].min == lo && p.intervals[1].max == hi);
+     continue;
+    }
+    assert(ret == 0);
     assert(p.intervals[0].min == 48000 && p.intervals[0].max == 48000);
     assert(p.intervals[1].min == ((ids[i] == TX_CODEC_DMA_TX_3 || ids[i] == PRIMARY_TDM_RX_0) ? lo : 2));
-    assert(p.intervals[1].max == ((ids[i] == TX_CODEC_DMA_TX_3 || ids[i] == PRIMARY_TDM_RX_0) ? hi : 2));
+    assert(p.intervals[1].max == (ids[i] == PRIMARY_TDM_RX_0 ? (hi > 4 ? 4 : hi) : ids[i] == TX_CODEC_DMA_TX_3 ? hi : 2));
     assert(p.fmt.bits == (bits | (1U << SNDRV_PCM_FORMAT_S16_LE)));
-    count++;
    }
 printf("PASS: %u fixup combinations\n", count);
 return 0;

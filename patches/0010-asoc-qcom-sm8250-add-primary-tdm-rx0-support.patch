@@ -5,12 +5,18 @@ SPDX-License-Identifier: GPL-2.0-only
 
 --- a/sound/soc/qcom/sm8250.c
 +++ b/sound/soc/qcom/sm8250.c
-@@ -64,8 +64,11 @@
+@@ -64,8 +64,17 @@
  					SNDRV_PCM_HW_PARAM_CHANNELS);
  	struct snd_mask *fmt = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
  
 +	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
 +
++	if (cpu_dai->id == PRIMARY_TDM_RX_0) {
++		if (channels->min > 4)
++			return -EINVAL;
++		if (channels->max > 4)
++			channels->max = 4;
++	}
  	rate->min = rate->max = 48000;
 -	if (snd_soc_rtd_to_cpu(rtd, 0)->id != TX_CODEC_DMA_TX_3)
 +	if (cpu_dai->id != TX_CODEC_DMA_TX_3 &&
@@ -18,7 +24,7 @@ SPDX-License-Identifier: GPL-2.0-only
  		channels->min = channels->max = 2;
  	snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
  
-@@ -81,6 +84,10 @@
+@@ -81,6 +90,10 @@
  	struct snd_soc_dai *codec_dai = snd_soc_rtd_to_codec(rtd, 0);
  
  	switch (cpu_dai->id) {
@@ -29,7 +35,7 @@ SPDX-License-Identifier: GPL-2.0-only
  	case PRIMARY_MI2S_RX:
  		codec_dai_fmt |= SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_I2S;
  		snd_soc_dai_set_sysclk(cpu_dai,
-@@ -136,11 +143,44 @@
+@@ -136,11 +149,44 @@
  	struct snd_soc_dai *cpu_dai = snd_soc_rtd_to_cpu(rtd, 0);
  
  	return qcom_snd_sdw_hw_free(substream, &data->stream_prepared[cpu_dai->id]);

@@ -113,6 +113,32 @@ def speakers(nodes):
     assert nodes[link + '/codec']['sound-dai'] == cell(0x1010, 0x1011, 0x1012, 0x1013)
     assert nodes[link + '/cpu']['sound-dai'] == nodes[dai_path.rsplit('/', 1)[0]]['phandle'] + cell(24)
 
+def multimedia2(nodes):
+    cell = lambda *v: struct.pack('>' + 'I' * len(v), *v)
+    candidates = [p for p in nodes if p.endswith('/dai@0') and
+                  nodes[p].get('reg') == cell(0) and
+                  'q6asm' in str(nodes.get(p.rsplit('/', 1)[0], {}))]
+    assert len(candidates) == 1, 'unique q6asm frontend required'
+    parent = candidates[0].rsplit('/', 1)[0]
+    assert nodes[parent + '/dai@1'] == {'reg': cell(1)}
+    link = '/sound/mm2-dai-link'
+    assert nodes[link] == {'link-name': b'MultiMedia2\0'}
+    assert nodes[link + '/cpu'] == {'sound-dai': nodes[parent]['phandle'] + cell(1)}
+    return (parent + '/dai@1', link)
+
+
+def compare_a3b(before, after):
+    a, ar = parse(before); b, br = parse(after)
+    assert ar == br
+    roots = multimedia2(b)
+    expected = {roots[0], roots[1], roots[1] + '/cpu'}
+    assert b.keys() - a.keys() == expected, 'only MM2 nodes may be added'
+    assert not a.keys() - b.keys(), 'node removed'
+    for path in a:
+        assert a[path] == b[path], 'existing property or phandle changed: ' + path
+    speakers(b)
+    print('PASS: A3b only MM2 FE and sound link added; all existing properties unchanged')
+
 class AllowlistTests(unittest.TestCase):
     def test_non_audio_rejected(self):
         for node in ('/soc@0/display-subsystem@ae00000', '/qca6390-pmu',
@@ -124,7 +150,9 @@ class AllowlistTests(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4 and sys.argv[1] == '--a3b':
+        compare_a3b(Path(sys.argv[2]).read_bytes(), Path(sys.argv[3]).read_bytes())
+    elif len(sys.argv) == 3:
         compare(Path(sys.argv[1]).read_bytes(), Path(sys.argv[2]).read_bytes())
     else:
         unittest.main()
