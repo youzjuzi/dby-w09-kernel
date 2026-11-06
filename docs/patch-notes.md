@@ -26,3 +26,15 @@ Patches 0001–0006 applied in order with zero fuzz to pristine files from the 7
 ## Owner-data separation
 
 Command arrays are no longer embedded in 0002. Use [the extraction tool and guide](panel-data.md) to supply the private header before compiling. Patch 0003 still relies on the pinned packet ordering. Zero-fuzz replay was repeated after this change; no complete rebuild or device validation was performed.
+
+## Four-channel capture candidate (O; hardware U)
+
+Patch `0008` preserves the negotiated channel interval only for
+`TX_CODEC_DMA_TX_3`. The AFE and TX macro DAIs allow 1–8 channels and
+WCD938x capture allows 1–4, so their intersection permits four channels.
+The machine driver's hardcoded fixup has no DT property override.
+All other backends retain stereo; every backend retains 48 kHz/S16_LE.
+The external `snd-soc-sm8250` module was built and checked offline (O).
+This supplements the historical six-patch full build without rebuilding
+Image or changing DTB. Four simultaneous microphone signals remain
+unverified (U); the earlier two-channel device result is unchanged.

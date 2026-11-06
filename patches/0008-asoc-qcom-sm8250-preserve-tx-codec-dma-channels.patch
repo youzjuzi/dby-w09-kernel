@@ -1,0 +1,25 @@
+From: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+Subject: [PATCH] ASoC: qcom: sm8250: preserve TX codec DMA capture channels
+
+Allow TX_CODEC_DMA_TX_3 to retain the channel interval negotiated by
+ASoC. Its AFE and TX macro DAIs support up to eight channels and the
+WCD938x capture DAI supports four; forcing stereo discards that range.
+There is no DT property to override this machine-driver fixup.
+Keep the stereo override for all other backends and retain the existing
+48000 Hz and S16_LE fixups for every backend.
+
+SPDX-License-Identifier: GPL-2.0
+Signed-off-by: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+---
+--- a/sound/soc/qcom/sm8250.c
++++ b/sound/soc/qcom/sm8250.c
+@@ -65,7 +65,8 @@
+ 	struct snd_mask *fmt = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+
+ 	rate->min = rate->max = 48000;
+-	channels->min = channels->max = 2;
++	if (snd_soc_rtd_to_cpu(rtd, 0)->id != TX_CODEC_DMA_TX_3)
++		channels->min = channels->max = 2;
+ 	snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
+
+ 	return 0;
