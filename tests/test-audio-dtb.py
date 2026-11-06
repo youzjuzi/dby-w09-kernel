@@ -11,6 +11,7 @@ def parse(blob):
     assert h[0] == 0xd00dfeed
     off = h[2]
     strings = blob[h[3]:h[3]+h[8]]
+    # Dict insertion order retains FDT node order, including DAI registration order.
     stack, nodes = [], {}
     while True:
         token = struct.unpack_from('>I', blob, off)[0]; off += 4
@@ -113,6 +114,33 @@ def speakers(nodes):
     assert nodes[link + '/codec']['sound-dai'] == cell(0x1010, 0x1011, 0x1012, 0x1013)
     assert nodes[link + '/cpu']['sound-dai'] == nodes[dai_path.rsplit('/', 1)[0]]['phandle'] + cell(24)
 
+def frontend_order(nodes):
+    links = [p for p in nodes if p.startswith('/sound/') and p.count('/') == 2
+             and nodes[p].get('status', b'okay\0') in (b'okay\0', b'ok\0')]
+    mm1, mm2 = '/sound/mm1-dai-link', '/sound/mm2-dai-link'
+    assert mm1 in links and mm2 in links, 'both multimedia links required'
+    assert links.index(mm1) < links.index(mm2), 'MM1 must precede MM2'
+    # qcom/common.c makes links without a codec child dynamic frontends.
+    frontends = [p for p in links if p + '/cpu' in nodes and p + '/codec' not in nodes]
+    assert frontends and frontends[0] == mm1, 'MM1 must be the first frontend'
+    return frontends
+
+
+def compare_fix1(before, after):
+    a, ar = parse(before); b, br = parse(after)
+    assert ar == br and a == b, 'properties, phandles or memreserve changed'
+    frontend_order(b)
+    mm1, mm2 = '/sound/mm1-dai-link', '/sound/mm2-dai-link'
+    groups = [[p for p in a if p == root or p.startswith(root + '/')]
+              for root in (mm1, mm2)]
+    moved = set(groups[0] + groups[1])
+    expected = [p for p in a if p not in moved]
+    start = min(list(a).index(mm1), list(a).index(mm2))
+    expected[start:start] = groups[0] + groups[1]
+    assert list(b) == expected, 'node order changed outside MM1/MM2 relocation'
+    print('PASS: only MM1/MM2 subtrees reordered; MM1 is the first frontend')
+
+
 def multimedia2(nodes):
     cell = lambda *v: struct.pack('>' + 'I' * len(v), *v)
     candidates = [p for p in nodes if p.endswith('/dai@0') and
@@ -121,6 +149,7 @@ def multimedia2(nodes):
     assert len(candidates) == 1, 'unique q6asm frontend required'
     parent = candidates[0].rsplit('/', 1)[0]
     assert nodes[parent + '/dai@1'] == {'reg': cell(1)}
+    frontend_order(nodes)
     link = '/sound/mm2-dai-link'
     assert nodes[link] == {'link-name': b'MultiMedia2\0'}
     assert nodes[link + '/cpu'] == {'sound-dai': nodes[parent]['phandle'] + cell(1)}
@@ -148,9 +177,34 @@ class AllowlistTests(unittest.TestCase):
         self.assertTrue(allowed('/soc@0/rsc@18200000/regulators', 'vdd-bob-supply'))
         self.assertFalse(allowed('/soc@0/rsc@18200000/regulators', 'compatible'))
 
+class FrontendOrderTests(unittest.TestCase):
+    def fixture(self, order):
+        nodes = {'/sound': {}}
+        for name in order:
+            root = '/sound/' + name + '-dai-link'
+            nodes[root] = {}
+            nodes[root + '/cpu'] = {}
+            if name == 'backend':
+                nodes[root + '/codec'] = {}
+        return nodes
+
+    def test_mm1_first(self):
+        self.assertEqual(frontend_order(self.fixture(['backend', 'mm1', 'mm2'])),
+                         ['/sound/mm1-dai-link', '/sound/mm2-dai-link'])
+
+    def test_old_mm2_first_rejected(self):
+        with self.assertRaisesRegex(AssertionError, 'MM1 must precede MM2'):
+            frontend_order(self.fixture(['mm2', 'mm1', 'backend']))
+
+    def test_other_frontend_first_rejected(self):
+        with self.assertRaisesRegex(AssertionError, 'first frontend'):
+            frontend_order(self.fixture(['extra', 'mm1', 'mm2']))
+
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) == 4 and sys.argv[1] == '--a3b':
+    if len(sys.argv) == 4 and sys.argv[1] == '--a3b-fix1':
+        compare_fix1(Path(sys.argv[2]).read_bytes(), Path(sys.argv[3]).read_bytes())
+    elif len(sys.argv) == 4 and sys.argv[1] == '--a3b':
         compare_a3b(Path(sys.argv[2]).read_bytes(), Path(sys.argv[3]).read_bytes())
     elif len(sys.argv) == 3:
         compare(Path(sys.argv[1]).read_bytes(), Path(sys.argv[2]).read_bytes())
