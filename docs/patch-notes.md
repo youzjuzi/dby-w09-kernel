@@ -59,3 +59,9 @@ speaker output and coexistence with capture still require owner device testing (
 A3b extends 0010's Primary TDM fixup: reject channel minimum greater than four and
 cap maximum at four. The executable harness covers all frontend IDs and channel
 intervals 1..8, including rejection and the unchanged microphone branch (O).
+
+Device result (H + R, 2026-11-07, one tablet, Linux package `20261102-16`): with
+patches 0009/0010 and the companion amplifier module, all four TFA9874 amplifiers
+locked to Primary TDM0 and played desktop audio with no clock, TDM or clip flags,
+and four-channel capture kept working. Desktop loudness depends on the Linux
+package's WirePlumber S16LE rule; this kernel tree is unchanged by that rule.

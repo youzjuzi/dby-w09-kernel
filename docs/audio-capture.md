@@ -1,6 +1,6 @@
 # Experimental capture board tree
 
-板载录音：实验性显式启动，四路模拟麦克风同时录音与桌面 UCM2 `Internal Microphone` 集成已在一台设备验证 (H + R, 2026-11-06)；物理麦克风映射与喇叭仍未验证 (U)。The topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree. No playback link or speaker amplifier is enabled; WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain device-tested board parameters.
+板载音频：实验性显式启动，四路模拟麦克风同时录音与桌面 UCM2 `Internal Microphone` 集成已在一台设备验证 (H + R, 2026-11-06)；四个喇叭桌面播放已在一台设备短时验证 (H + R, 2026-11-07，见文末)；物理麦克风映射仍未验证 (U)，没有喇叭保护算法。The capture topology adds ADSP/APR, VA and WCD938x capture links over the existing board tree; the A3a/A3b sections below add the Primary TDM speaker link. WSA remains disabled. Upstream sm8250-mtp supplies the structural reference. Reset GPIO, SoundWire ports, microphone wiring and 1.8 V micbias retain device-tested board parameters.
 
 The private memory include already reserves the ADSP region. The board tree restores its memory-region reference after replacing upstream reserved-memory. The relocatable MDT uses segment offsets within that region; no new memory carveout is created. DMIC routes remain from the earlier capture topology, alongside the eight analog routing pairs; retaining them does not claim digital microphone hardware is present. VA uses the previously tested 2.4 MHz setting, not a claim that the stock VA property itself has that value.
 
@@ -57,3 +57,13 @@ and byte-identical properties on every existing node, including all phandles.
 Patch 0010 now clamps Primary TDM channels to four and returns EINVAL if the
 negotiated minimum exceeds four; TX_CODEC_DMA_TX_3 retains its earlier negotiation.
 This is host-validated configuration, not a claim of device duplex support.
+
+## Device result for speakers (H + R, 2026-11-07)
+
+On one tablet with Linux hub package `20261102-16`, Image and DTB byte-identical to
+this tree's build, all four TFA9874 amplifiers on Primary TDM0 played desktop audio
+through `Internal Speakers` with no clock, TDM or clip flags, stayed at 26–34 °C during
+60 seconds of music, powered down after playback stopped, and four-channel capture
+kept working. Desktop loudness depends on the hub package's WirePlumber S16LE rule;
+the S24_LE frontend path measured about 48 dB quieter on this device. No speaker
+protection algorithm exists; long-term playback remains U.
