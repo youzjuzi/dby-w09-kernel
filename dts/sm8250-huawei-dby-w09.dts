@@ -1015,3 +1015,71 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 &{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@35} { phandle = <0x1011>; };
 &{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@36} { phandle = <0x1012>; };
 &{/soc@0/geniqup@9c0000/i2c@98c000/tfa9874@37} { phandle = <0x1013>; };
+
+/* Temporary Hall probe supply; the final power policy belongs to H2. */
+&apps_rsc {
+	regulators {
+		vreg_l8c_1p8: ldo8 {
+			regulator-name = "vreg_l8c_1p8";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+	};
+};
+
+&tlmm {
+	hall_probe_default: hall-probe-default-state {
+		pins = "gpio23", "gpio113", "gpio121";
+		function = "gpio";
+		bias-pull-up;
+		drive-strength = <2>;
+		input-enable;
+	};
+};
+
+/ {
+	hall-probe {
+		compatible = "gpio-keys";
+		label = "hall-probe";
+		pinctrl-names = "default";
+		pinctrl-0 = <&hall_probe_default>;
+
+		/* Active-low is a probe assumption; verify polarity on hardware.
+		 * Accessory mapping is unknown. These are observation codes only.
+		 */
+		switch-hall1 {
+			gpios = <&tlmm 121 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_KEYPAD_SLIDE>;
+			debounce-interval = <20>;
+		};
+		switch-hall2 {
+			gpios = <&tlmm 23 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_DOCK>;
+			debounce-interval = <20>;
+		};
+	};
+};
+
+/ {
+	/* hall0 already activates near 45 degrees: blanking starts half closed.
+	 * hall2 also detects the pen, so it must not drive lid blanking.
+	 * A fully-closed policy would need H2 option 2 instead.
+	 */
+	hall-lid {
+		compatible = "gpio-keys";
+		label = "hall-lid";
+		pinctrl-names = "default";
+		pinctrl-0 = <&hall_probe_default>;
+		switch-lid {
+			gpios = <&tlmm 113 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_LID>;
+			debounce-interval = <200>;
+		};
+	};
+};
