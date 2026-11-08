@@ -85,11 +85,11 @@ Three Hall sensors (GPIO113, GPIO121, GPIO23, pulled up) are powered from PM8150
 
 The mapping comes from observations on one tablet with one magnetic tri-fold cover and one pen (H + R, 2026-11-08; GPIO113 becomes active once the segment nearest the screen is down, about half open). The keyboard is untested; verify other accessories yourself. `hall-lid` and `hall-probe` share one pin-control state, which the kernel source permits for GPIO-function pins and which bound successfully on that tablet (H). Suspend and lid wake are not validated.
 
-## 内存映射广播定时器实验 / MMIO broadcast timer experiment
+## 内存映射广播定时器 / MMIO broadcast timer
 
-`feat/mmio-timer` 实验分支（P9，2026-11-08）将 `/soc@0/timer@17c20000` 显式设为 `okay`，目的是让 `arch_mem_timer` 提供硬件广播时钟事件，观察簇级 idle 与关屏待机功率。现有内核已编入驱动，无需改配置或重编 Image。源码与构建核对属于 **O**；定时器可访问性、广播设备选择、簇级 idle 和功耗改善均为 **U**，尚未实机验证。此实验不调整 idle 参数或其它节点。
+`/soc@0/timer@17c20000`(`arm,armv7-timer-mem`,19.2 MHz)设为 `okay`。内核已编入 `arm_arch_timer_mmio` 驱动，无需改配置。一台平板上的实测（H，2026-11-08）：广播时钟事件设备由软件的 `bc_hrtimer` 变为 `arch_mem_timer`；关屏待机时簇级 cpuidle 状态由 0 次变为约 60–67% 的时间；关屏功率约降 0.05 W（落在原有波动范围内，结论为小幅）；亮屏几乎无收益。短按/合盖/长按/音频/时钟同步回归正常，约 15 分钟内未见 RCU stall 或 lockup。过夜等长时稳定性未验证（U）。
 
-The `feat/mmio-timer` experiment branch (P9, 2026-11-08) explicitly enables `/soc@0/timer@17c20000` to evaluate `arch_mem_timer` as a hardware broadcast clockevent and observe cluster idle and screen-off power. The driver is already built into the existing kernel; no configuration change or Image rebuild is needed. Source/build checks are **O**; hardware accessibility, broadcast selection, cluster idle and power savings remain **U**, without device validation. Idle parameters and other nodes are unchanged.
+The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz) is enabled; the driver is already built, so no config change is needed. Measured on one tablet (H, 2026-11-08): the broadcast clockevent changed from the software `bc_hrtimer` to `arch_mem_timer`; with the screen off, the cluster cpuidle state went from zero uses to about 60–67% of the time; screen-off power dropped by only about 0.05 W (within the earlier run-to-run spread); screen-on showed almost no benefit. Key, lid, audio and time-sync checks were normal and no RCU stall or lockup appeared within about 15 minutes. Long-run (overnight) stability is unverified (U).
 
 ## English summary
 
