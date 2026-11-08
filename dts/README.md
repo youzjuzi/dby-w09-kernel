@@ -75,6 +75,16 @@ Supply a regular, non-symlink file of at most 64 bytes, containing exactly `AA:B
 
 The bytes are written little-endian to `uart6/bluetooth/local-bd-address`, changing the DTB digest. Omitting the option preserves the board copy and DTB bytes. Metadata records only `bd_address: supplied` or `none`, and terminal messages do not print the address. Keep generated DTS/DTB files and the entire output directory private.
 
+## 霍尔传感器与合盖开关 / Hall sensors and lid switch
+
+板级 DTS 为原厂的三个霍尔传感器建立了节点：GPIO113、GPIO121、GPIO23（上拉输入），供电为 PM8150L 的 `ldo8`（1.8 V，当前设为常开，策略仍是临时的）。GPIO113 作为独立的 `hall-lid` 节点上报 `SW_LID`（低有效，去抖 200 ms，**无 wakeup-source**，因为休眠从未验证）。GPIO121 与 GPIO23 只是观察用开关（`SW_KEYPAD_SLIDE`、`SW_DOCK`），不触发任何动作。GPIO23 同时被笔和完全合上的皮套触发，所以不用于合盖。
+
+映射来自一台平板、一种三段磁性皮套和一支笔的实机观察（H + R，2026-11-08；皮套最靠近屏幕的一段贴下时 GPIO113 即有效，约半开）；键盘未测，其他配件需自行验证。`hall-lid` 与 `hall-probe` 共用同一个引脚配置状态，这在内核源码层面可行（GPIO 复用允许共享），并在上述平板上绑定成功（H）。休眠（s2idle）与合盖唤醒没有验证。
+
+Three Hall sensors (GPIO113, GPIO121, GPIO23, pulled up) are powered from PM8150L `ldo8` at 1.8 V, currently always on as a temporary policy. GPIO113 is a separate `hall-lid` node reporting `SW_LID` (active-low, 200 ms debounce, **no wakeup-source** because suspend was never validated). GPIO121 and GPIO23 are observation-only switches (`SW_KEYPAD_SLIDE`, `SW_DOCK`) and trigger nothing. GPIO23 reacts to both the pen and a fully closed cover, so it is not used for lid detection.
+
+The mapping comes from observations on one tablet with one magnetic tri-fold cover and one pen (H + R, 2026-11-08; GPIO113 becomes active once the segment nearest the screen is down, about half open). The keyboard is untested; verify other accessories yourself. `hall-lid` and `hall-probe` share one pin-control state, which the kernel source permits for GPIO-function pins and which bound successfully on that tablet (H). Suspend and lid wake are not validated.
+
 ## English summary
 
 This standalone board source consolidates project DTS layers over pinned Linux 7.2.10 includes; it does not depend on internal experiment directories or distribute the decompiled snapshot. It is still a development source, not an upstream-ready board submission.
