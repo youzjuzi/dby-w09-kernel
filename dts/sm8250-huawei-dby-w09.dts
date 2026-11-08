@@ -20,7 +20,6 @@
 &{/soc@0/gpu@3d00000/zap-shader} { /delete-property/ memory-region; };
 &{/soc@0/remoteproc@5c00000} { /delete-property/ memory-region; };
 &{/soc@0/remoteproc@8300000} { /delete-property/ memory-region; };
-&{/soc@0/video-codec@aa00000} { /delete-property/ memory-region; };
 &{/soc@0/remoteproc@17300000} { /delete-property/ memory-region; };
 &{/soc@0/mailbox@408000} { status="disabled"; };
 &{/soc@0/efuse@784000} { status="disabled"; };
@@ -91,8 +90,13 @@
 &{/soc@0/usb@a6f8800} { status="disabled"; };
 &{/soc@0/system-cache-controller@9200000} { status="disabled"; };
 &{/soc@0/usb@a8f8800} { status="disabled"; };
-&{/soc@0/video-codec@aa00000} { status="disabled"; };
-&{/soc@0/clock-controller@abf0000} { status="disabled"; };
+/* V1a: manual Venus bring-up, device operation unverified (U, 2026-11-08). */
+&{/soc@0/clock-controller@abf0000} { status = "okay"; };
+&{/soc@0/video-codec@aa00000} {
+ status = "okay";
+ memory-region = <&dby_video_mem>;
+ firmware-name = "qcom/dby-w09/venus.mdt";
+};
 &{/soc@0/cci@ac4f000} { status="disabled"; };
 &{/soc@0/cci@ac50000} { status="disabled"; };
 &{/soc@0/camss@ac6a000} { status="disabled"; };
@@ -125,6 +129,8 @@
  bus-width=<4>; broken-cd; no-1-8-v; no-sdio; no-mmc;
 };
 #include "dby-memory-private.dtsi"
+/* V1a: reserve a new handle; keep existing nodes/references unchanged. */
+&dby_video_mem { phandle = <0x1014>; };
 &{/smem} { memory-region=<&dby_smem>; };
 
 // USB2 bring-up: fixed peripheral role; RPMh regulators, no SPMI access.

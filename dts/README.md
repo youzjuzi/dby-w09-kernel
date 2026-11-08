@@ -22,7 +22,7 @@ python3 -B tools/extract-memory-layout.py \
 
 工具仅读取 RAM 和具有 reg 的 reserved-memory 子节点。以这些内容的固定指纹限制到本次核对过的布局；不同内存容量、固件版本或保留区布局可能被拒绝。不能删除指纹检查或复制别人的 include 来继续。它不提取 bootargs、序列号或 MAC 地址。
 
-输出包括 RAM、保留区和简单帧缓冲描述，保留原有 no-map，且按历史启动策略给连续 splash 区补 no-map；给 cmd-db、SMEM 和 GPU ZAP 区建立标签。1600×2560、stride 6400、a8r8g8b8 的帧缓冲假定沿用此板基线，不是自动识别所有屏幕。工具不修改设备，也不授予所提取数据的再分发权利。
+输出包括 RAM、保留区和简单帧缓冲描述，保留原有 no-map，且按历史启动策略给连续 splash 区补 no-map；给 cmd-db、SMEM、GPU ZAP 和视频保留区建立标签。1600×2560、stride 6400、a8r8g8b8 的帧缓冲假定沿用此板基线，不是自动识别所有屏幕。工具不修改设备，也不授予所提取数据的再分发权利。
 
 ## 2. 编译独立 DTB
 
@@ -90,6 +90,14 @@ The mapping comes from observations on one tablet with one magnetic tri-fold cov
 `/soc@0/timer@17c20000`(`arm,armv7-timer-mem`,19.2 MHz)设为 `okay`。内核已编入 `arm_arch_timer_mmio` 驱动，无需改配置。一台平板上的实测（H，2026-11-08）：广播时钟事件设备由软件的 `bc_hrtimer` 变为 `arch_mem_timer`；关屏待机时簇级 cpuidle 状态由 0 次变为约 60–67% 的时间；关屏功率约降 0.05 W（落在原有波动范围内，结论为小幅）；亮屏几乎无收益。短按/合盖/长按/音频/时钟同步回归正常，约 15 分钟内未见 RCU stall 或 lockup。过夜等长时稳定性未验证（U）。
 
 The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz) is enabled; the driver is already built, so no config change is needed. Measured on one tablet (H, 2026-11-08): the broadcast clockevent changed from the software `bc_hrtimer` to `arch_mem_timer`; with the screen off, the cluster cpuidle state went from zero uses to about 60–67% of the time; screen-off power dropped by only about 0.05 W (within the earlier run-to-run spread); screen-on showed almost no benefit. Key, lid, audio and time-sync checks were normal and no RCU stall or lockup appeared within about 15 minutes. Long-run (overnight) stability is unverified (U).
+
+## 视频编解码（Venus）
+
+本分支启用 `videocc` 与 `video-codec`，视频保留区由私有内存提取器标记为 `dby_video_mem`。为避免 dtc 插入新引用后重排已有 phandle，新保留区使用未占用的 `0x1014`，沿用已有显式编号的做法；其他节点编号保持不变。
+
+固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。`iris` 与 `venus` 都匹配同一设备，设备包默认以 blacklist 和 install 拒绝 `qcom-iris`，并仅 blacklist `venus_core` 阻止自动探测。手动入口为 `modprobe venus_core`；子设备解码/编码驱动的自动加载是根据上游代码作出的离线推断，仍需实机确认。
+
+本修改只有离线代码、编译和检查证据（O）；启动、固件验签、SMMU 行为、视频设备注册与硬件解码均未验证（U）。未改变内核配置、OPP、时钟或互联参数，不启用 no-TZ 的 `video-firmware` 子节点。
 
 ## English summary
 
