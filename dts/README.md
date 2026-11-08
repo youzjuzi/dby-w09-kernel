@@ -95,7 +95,9 @@ The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz
 
 本分支启用 `videocc` 与 `video-codec`，视频保留区由私有内存提取器标记为 `dby_video_mem`。为避免 dtc 插入新引用后重排已有 phandle，新保留区使用未占用的 `0x1014`，沿用已有显式编号的做法；其他节点编号保持不变。
 
-固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。`iris` 与 `venus` 都匹配同一设备，设备包默认以 blacklist 和 install 拒绝 `qcom-iris`，并仅 blacklist `venus_core` 阻止自动探测。手动入口为 `modprobe venus_core`；子设备解码/编码驱动的自动加载是根据上游代码作出的离线推断，仍需实机确认。
+固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。上游 `iris` 与 `venus` 的源码都有此设备的匹配项，但 Venus 的 SM8250 匹配项和资源表受 `!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 控制。**当前配置中 IRIS=m，因此现有 Venus 模块没有 SM8250 匹配项，手动加载也不能探测此设备（O）**；模块加载成功不能当作硬件绑定成功。
+
+本实验设备包按手动探测策略，以 blacklist 和 install 拒绝 `qcom-iris`，并仅 blacklist `venus_core`。`modprobe venus_core` 只是加载入口；子设备解码/编码驱动的自动加载路径以核心驱动成功匹配并完成 probe 为前提。当前配置不满足此前提，需要另行评估配置或驱动变更，不能把本分支作为可用的硬解方案。
 
 本修改只有离线代码、编译和检查证据（O）；启动、固件验签、SMMU 行为、视频设备注册与硬件解码均未验证（U）。未改变内核配置、OPP、时钟或互联参数，不启用 no-TZ 的 `video-firmware` 子节点。
 
