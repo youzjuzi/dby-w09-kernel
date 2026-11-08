@@ -91,13 +91,13 @@ The mapping comes from observations on one tablet with one magnetic tri-fold cov
 
 The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz) is enabled; the driver is already built, so no config change is needed. Measured on one tablet (H, 2026-11-08): the broadcast clockevent changed from the software `bc_hrtimer` to `arch_mem_timer`; with the screen off, the cluster cpuidle state went from zero uses to about 60–67% of the time; screen-off power dropped by only about 0.05 W (within the earlier run-to-run spread); screen-on showed almost no benefit. Key, lid, audio and time-sync checks were normal and no RCU stall or lockup appeared within about 15 minutes. Long-run (overnight) stability is unverified (U).
 
-## 视频编解码（Venus）
+## 视频编解码（SM8250 由 iris 驱动）
 
 本分支启用 `videocc` 与 `video-codec`，视频保留区由私有内存提取器标记为 `dby_video_mem`。为避免 dtc 插入新引用后重排已有 phandle，新保留区使用未占用的 `0x1014`，沿用已有显式编号的做法；其他节点编号保持不变。
 
-固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。上游 `iris` 与 `venus` 的源码都有此设备的匹配项，但 Venus 的 SM8250 匹配项和资源表受 `!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 控制。**当前配置中 IRIS=m，因此现有 Venus 模块没有 SM8250 匹配项，手动加载也不能探测此设备（O）**；模块加载成功不能当作硬件绑定成功。
+固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。Linux 7.2.10 当前配置中 `VIDEO_QCOM_IRIS=m`，SM8250 由 `iris` 驱动，其匹配表包含 `qcom,sm8250-venus`；`venus` 的 SM8250 匹配项和资源表受 `!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 控制，在该配置下被编译排除。这是离线源码和模块检查结论（O），不代表硬件绑定成功。
 
-本实验设备包按手动探测策略，以 blacklist 和 install 拒绝 `qcom-iris`，并仅 blacklist `venus_core`。`modprobe venus_core` 只是加载入口；子设备解码/编码驱动的自动加载路径以核心驱动成功匹配并完成 probe 为前提。当前配置不满足此前提，需要另行评估配置或驱动变更，不能把本分支作为可用的硬解方案。
+本实验设备包仅以 `blacklist qcom_iris` 阻止自动探测，手动入口为 `modprobe qcom_iris`，没有 install 拒绝规则，也不打包旧 Venus 驱动。iris 支持 DTS 中的固件名覆盖与第一个 memory-region，沿用现有视频保留区和固件输入。其 PAS ID 为 9，验签复位后还有 `qcom_scm_mem_protect_video_var` 调用；本机是否接受这些操作仍未验证（U）。
 
 本修改只有离线代码、编译和检查证据（O）；启动、固件验签、SMMU 行为、视频设备注册与硬件解码均未验证（U）。未改变内核配置、OPP、时钟或互联参数，不启用 no-TZ 的 `video-firmware` 子节点。
 
