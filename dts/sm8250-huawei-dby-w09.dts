@@ -1050,12 +1050,6 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 		/* Active-low is a probe assumption; verify polarity on hardware.
 		 * Accessory mapping is unknown. These are observation codes only.
 		 */
-		switch-hall0 {
-			gpios = <&tlmm 113 GPIO_ACTIVE_LOW>;
-			linux,input-type = <EV_SW>;
-			linux,code = <SW_MACHINE_COVER>;
-			debounce-interval = <20>;
-		};
 		switch-hall1 {
 			gpios = <&tlmm 121 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_SW>;
@@ -1067,6 +1061,25 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 			linux,input-type = <EV_SW>;
 			linux,code = <SW_DOCK>;
 			debounce-interval = <20>;
+		};
+	};
+};
+
+/ {
+	/* hall0 already activates near 45 degrees: blanking starts half closed.
+	 * hall2 also detects the pen, so it must not drive lid blanking.
+	 * A fully-closed policy would need H2 option 2 instead.
+	 */
+	hall-lid {
+		compatible = "gpio-keys";
+		label = "hall-lid";
+		pinctrl-names = "default";
+		pinctrl-0 = <&hall_probe_default>;
+		switch-lid {
+			gpios = <&tlmm 113 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_LID>;
+			debounce-interval = <200>;
 		};
 	};
 };
