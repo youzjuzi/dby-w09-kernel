@@ -85,6 +85,12 @@ Three Hall sensors (GPIO113, GPIO121, GPIO23, pulled up) are powered from PM8150
 
 The mapping comes from observations on one tablet with one magnetic tri-fold cover and one pen (H + R, 2026-11-08; GPIO113 becomes active once the segment nearest the screen is down, about half open). The keyboard is untested; verify other accessories yourself. `hall-lid` and `hall-probe` share one pin-control state, which the kernel source permits for GPIO-function pins and which bound successfully on that tablet (H). Suspend and lid wake are not validated.
 
+## 内存映射广播定时器实验 / MMIO broadcast timer experiment
+
+`feat/mmio-timer` 实验分支（P9，2026-11-08）将 `/soc@0/timer@17c20000` 显式设为 `okay`，目的是让 `arch_mem_timer` 提供硬件广播时钟事件，观察簇级 idle 与关屏待机功率。现有内核已编入驱动，无需改配置或重编 Image。源码与构建核对属于 **O**；定时器可访问性、广播设备选择、簇级 idle 和功耗改善均为 **U**，尚未实机验证。此实验不调整 idle 参数或其它节点。
+
+The `feat/mmio-timer` experiment branch (P9, 2026-11-08) explicitly enables `/soc@0/timer@17c20000` to evaluate `arch_mem_timer` as a hardware broadcast clockevent and observe cluster idle and screen-off power. The driver is already built into the existing kernel; no configuration change or Image rebuild is needed. Source/build checks are **O**; hardware accessibility, broadcast selection, cluster idle and power savings remain **U**, without device validation. Idle parameters and other nodes are unchanged.
+
 ## English summary
 
 This standalone board source consolidates project DTS layers over pinned Linux 7.2.10 includes; it does not depend on internal experiment directories or distribute the decompiled snapshot. It is still a development source, not an upstream-ready board submission.

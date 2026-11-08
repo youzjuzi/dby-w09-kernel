@@ -103,7 +103,8 @@
 &{/soc@0/spmi@c440000} { status="okay"; };
 &{/soc@0/remoteproc@17300000} { status="disabled"; };
 &{/soc@0/watchdog@17c10000} { status="disabled"; };
-&{/soc@0/timer@17c20000} { status="disabled"; };
+/* P9 experiment (2026-11-08, U): enable arch_mem_timer as a broadcast clockevent. */
+&{/soc@0/timer@17c20000} { status = "okay"; };
 &{/smp2p-adsp} { status="disabled"; };
 &{/smp2p-cdsp} { status="disabled"; };
 &{/smp2p-slpi} { status="disabled"; };
