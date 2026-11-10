@@ -91,15 +91,15 @@ The mapping comes from observations on one tablet with one magnetic tri-fold cov
 
 The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz) is enabled; the driver is already built, so no config change is needed. Measured on one tablet (H, 2026-11-08): the broadcast clockevent changed from the software `bc_hrtimer` to `arch_mem_timer`; with the screen off, the cluster cpuidle state went from zero uses to about 60–67% of the time; screen-off power dropped by only about 0.05 W (within the earlier run-to-run spread); screen-on showed almost no benefit. Key, lid, audio and time-sync checks were normal and no RCU stall or lockup appeared within about 15 minutes. Long-run (overnight) stability is unverified (U).
 
-## 视频编解码（SM8250 由 iris 驱动）
+## 视频编解码（关闭 IRIS，SM8250 由 Venus 驱动）
 
 本分支启用 `videocc` 与 `video-codec`，视频保留区由私有内存提取器标记为 `dby_video_mem`。为避免 dtc 插入新引用后重排已有 phandle，新保留区使用未占用的 `0x1014`，沿用已有显式编号的做法；其他节点编号保持不变。
 
-固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。Linux 7.2.10 当前配置中 `VIDEO_QCOM_IRIS=m`，SM8250 由 `iris` 驱动，其匹配表包含 `qcom,sm8250-venus`；`venus` 的 SM8250 匹配项和资源表受 `!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 控制，在该配置下被编译排除。这是离线源码和模块检查结论（O），不代表硬件绑定成功。
+固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。按所有者决定，本实验固定在 Linux 7.2.10，使用 Venus 驱动。配置关闭 `VIDEO_QCOM_IRIS`，保留 `VIDEO_QCOM_VENUS=m`；`!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 条件使 Venus 包含 SM8250 资源表和 `qcom,sm8250-venus` 匹配项。这是离线源码和模块检查结论（O），不代表硬件绑定成功。
 
-本实验设备包仅以 `blacklist qcom_iris` 阻止自动探测，手动入口为 `modprobe qcom_iris`，没有 install 拒绝规则，也不打包旧 Venus 驱动。iris 支持 DTS 中的固件名覆盖与第一个 memory-region，沿用现有视频保留区和固件输入。其 PAS ID 为 9，验签复位后还有 `qcom_scm_mem_protect_video_var` 调用；本机是否接受这些操作仍未验证（U）。
+本实验设备包打包 Venus 三个模块，不打包 iris，仅以 `blacklist venus_core` 阻止自动探测，手动入口为 `modprobe venus_core`，没有 install 拒绝规则。Venus 沿用 DTS 固件名和视频保留区；没有 `video-firmware` 子节点时使用 TZ 路径，调用 `qcom_mdt_load`、`qcom_scm_pas_auth_and_reset`（PAS ID 为 9），并在资源表 `cp_size` 非零时调用 `qcom_scm_mem_protect_video_var`；本机是否接受这些操作仍未验证（U）。
 
-本修改只有离线代码、编译和检查证据（O）；启动、固件验签、SMMU 行为、视频设备注册与硬件解码均未验证（U）。未改变内核配置、OPP、时钟或互联参数，不启用 no-TZ 的 `video-firmware` 子节点。
+本修改只有离线代码、编译和检查证据（O）；启动、固件验签、SMMU 行为、视频设备注册与硬件解码均未验证（U）。内核配置仅关闭 IRIS；启用的 `IKCONFIG` 会将此配置差异嵌入 Image。DTS、OPP、时钟及互联参数不变，不启用 no-TZ 的 `video-firmware` 子节点。
 
 ## English summary
 
