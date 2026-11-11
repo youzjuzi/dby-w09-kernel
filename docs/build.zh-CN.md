@@ -78,7 +78,7 @@ DTB 步骤可选用 `--bd-address-file` 提供所有者选择的蓝牙地址；�
 
 ## 4. 接入主仓库的树外驱动
 
-`dby-w09-linux` 提供背光、电量计与触摸驱动。必须使用与 Image 相同的目标源码、构建树、配置和工具链，先完成上面的内核及模块构建。下面在主机创建独立驱动工作副本；两个目标目录也必须尚不存在，重复执行前先保留旧结果。
+`dby-w09-linux` 提供背光、电量计与触摸驱动。必须使用与 Image 相同的目标源码、构建树、配置和工具链，先完成上面的内核及模块构建。下面在主机创建独立驱动工作副本；四个目标目录也必须尚不存在，重复执行前先保留旧结果。
 
 ```sh
 # Keep KERNEL_SOURCE and KERNEL_BUILD from the kernel recipe above.
@@ -94,7 +94,7 @@ for driver in rt8555-backlight dby-fg-readonly dby-chg dby-tfa9874; do
 done
 ```
 
-四个 `.ko` 会生成在各自的驱动工作副本中。四个树外驱动还包括充电与喇叭；其设备树节点、依赖和使用范围见主仓库 `drivers/rt8555-backlight/README.md`、`drivers/dby-fg-readonly/README.md`；编译成功不代表节点已正确接入。
+四个 `.ko` 会生成在各自的驱动工作副本中。四个树外驱动还包括充电与喇叭；其设备树节点、依赖和使用范围见主仓库 `drivers/rt8555-backlight/README.md`、`drivers/dby-fg-readonly/README.md`、`drivers/dby-chg/README.md`、`drivers/dby-tfa9874/README.md`；编译成功不代表节点已正确接入。
 
 触摸另需固定计划 JSON 和生成的 `thp-plan-table.h`；按主仓库[可选触摸接入](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md#31-启用触摸可选)准备输入，用同一对目标内核源码／构建树在独立模块目录内编译。提取固件本身不会生成计划数据。bundle 要求匹配的十参数模块与固件，固定关闭未验收的 guard；板级节点已存在，不需改 DTB 或内核。独立的短时 H + R 记录不证明长期稳定或与较早模块的实机等价。
 
