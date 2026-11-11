@@ -116,7 +116,7 @@ In-tree modules are selected from the kernel build by the bundle tool's `modules
 |---|---|
 | `kernel/drivers/video/backlight/rt8555-backlight.ko` | `$KERNEL_WORK/rt8555-backlight/rt8555-backlight.ko` |
 | `kernel/drivers/power/supply/dby-fg-readonly.ko` | `$KERNEL_WORK/dby-fg-readonly/dby-fg-readonly.ko` |
-| `kernel/drivers/power/supply/dby-chg.ko` | `$KERNEL_WORK/dby-chg/dby-chg.ko` |
+| `kernel/drivers/power/supply/dby_chg.ko` | `$KERNEL_WORK/dby-chg/dby_chg.ko` |
 | `kernel/sound/soc/codecs/dby-tfa9874.ko` | `$KERNEL_WORK/dby-tfa9874/dby-tfa9874.ko` |
 | `kernel/drivers/input/touchscreen/nt36523-thp.ko` | Separately prepared touch build's `nt36523-thp.ko`, when enabled |
 
@@ -124,4 +124,4 @@ The builder invokes `modules_install`, checks exact module vermagic, and validat
 
 A p1-only bundle is an intermediate output. The installer also requires the selected full or minimal rootfs archive; follow the hub tool documentation for rootfs construction and dry-run plans. Packaging or an offline build alone does not establish device operation. Neither the kernel repository nor the bundle builder assembles the U-Boot Recovery image.
 
-The current hub module list selects `dby-chg.ko` and `dby-tfa9874.ko` as well as backlight/gauge/touch. Add the two new external mappings above; the older example JSON supplies only three external mappings. A successful compile is not a source-clearance or hardware-safety result. The charger writes PMIC registers; the speakers have no protection algorithm. Read the hub driver notes before selecting a bundle. Audio also needs owner-supplied locked ADSP firmware; the historical radio/GPU/touch-only recipe does not reproduce the current audio system.
+The current hub module list selects `dby_chg.ko` and `dby-tfa9874.ko` as well as backlight/gauge/touch. Add the two new external mappings above; the older example JSON supplies only three external mappings. A successful compile is not a source-clearance or hardware-safety result. The charger writes PMIC registers; the speakers have no protection algorithm. Read the hub driver notes before selecting a bundle. Audio also needs owner-supplied locked ADSP firmware; the historical radio/GPU/touch-only recipe does not reproduce the current audio system.

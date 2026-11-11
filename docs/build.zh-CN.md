@@ -119,7 +119,7 @@ done
 |---|---|
 | `kernel/drivers/video/backlight/rt8555-backlight.ko` | `$KERNEL_WORK/rt8555-backlight/rt8555-backlight.ko` |
 | `kernel/drivers/power/supply/dby-fg-readonly.ko` | `$KERNEL_WORK/dby-fg-readonly/dby-fg-readonly.ko` |
-| `kernel/drivers/power/supply/dby-chg.ko` | `$KERNEL_WORK/dby-chg/dby-chg.ko` |
+| `kernel/drivers/power/supply/dby_chg.ko` | `$KERNEL_WORK/dby-chg/dby_chg.ko` |
 | `kernel/sound/soc/codecs/dby-tfa9874.ko` | `$KERNEL_WORK/dby-tfa9874/dby-tfa9874.ko` |
 | `kernel/drivers/input/touchscreen/nt36523-thp.ko` | 独立触摸构建目录里的 `nt36523-thp.ko`，仅开启时提供 |
 
@@ -127,4 +127,4 @@ done
 
 仅含 p1 的 bundle 是中间产物；安装器还需要所选的完整或最小 rootfs 归档。按主仓库工具说明构建根系统并先查看 dry-run 计划。打包或离线构建成功均不等于实机运行成功；内核仓库和 bundle 构建器均不负责组装 U-Boot 的 Recovery 镜像。
 
-当前中心仓库模块列表除背光／电量计／触摸外还选择 `dby-chg.ko` 和 `dby-tfa9874.ko`，旧示例 JSON 只有三项树外映射，须补上表中的两项。编译成功不代表来源许可或硬件安全已核清。充电驱动写 PMIC 寄存器，喇叭没有保护算法，选包前先读中心仓库驱动说明。音频还需所有者提供锁定的 ADSP 固件；历史 radio／GPU／touch 配方不能复现当前完整音频系统。
+当前中心仓库模块列表除背光／电量计／触摸外还选择 `dby_chg.ko` 和 `dby-tfa9874.ko`，旧示例 JSON 只有三项树外映射，须补上表中的两项。编译成功不代表来源许可或硬件安全已核清。充电驱动写 PMIC 寄存器，喇叭没有保护算法，选包前先读中心仓库驱动说明。音频还需所有者提供锁定的 ADSP 固件；历史 radio／GPU／touch 配方不能复现当前完整音频系统。
