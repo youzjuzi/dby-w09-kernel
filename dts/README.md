@@ -22,7 +22,7 @@ python3 -B tools/extract-memory-layout.py \
 
 工具仅读取 RAM 和具有 reg 的 reserved-memory 子节点。以这些内容的固定指纹限制到本次核对过的布局；不同内存容量、固件版本或保留区布局可能被拒绝。不能删除指纹检查或复制别人的 include 来继续。它不提取 bootargs、序列号或 MAC 地址。
 
-输出包括 RAM、保留区和简单帧缓冲描述，保留原有 no-map，且按历史启动策略给连续 splash 区补 no-map；给 cmd-db、SMEM 和 GPU ZAP 区建立标签。1600×2560、stride 6400、a8r8g8b8 的帧缓冲假定沿用此板基线，不是自动识别所有屏幕。工具不修改设备，也不授予所提取数据的再分发权利。
+输出包括 RAM、保留区和简单帧缓冲描述，保留原有 no-map，且按历史启动策略给连续 splash 区补 no-map；给 cmd-db、SMEM、GPU ZAP 和视频保留区建立标签。1600×2560、stride 6400、a8r8g8b8 的帧缓冲假定沿用此板基线，不是自动识别所有屏幕。工具不修改设备，也不授予所提取数据的再分发权利。
 
 ## 2. 编译独立 DTB
 
@@ -90,6 +90,16 @@ The mapping comes from observations on one tablet with one magnetic tri-fold cov
 `/soc@0/timer@17c20000`(`arm,armv7-timer-mem`,19.2 MHz)设为 `okay`。内核已编入 `arm_arch_timer_mmio` 驱动，无需改配置。一台平板上的实测（H，2026-11-08）：广播时钟事件设备由软件的 `bc_hrtimer` 变为 `arch_mem_timer`；关屏待机时簇级 cpuidle 状态由 0 次变为约 60–67% 的时间；关屏功率约降 0.05 W（落在原有波动范围内，结论为小幅）；亮屏几乎无收益。短按/合盖/长按/音频/时钟同步回归正常，约 15 分钟内未见 RCU stall 或 lockup。过夜等长时稳定性未验证（U）。
 
 The memory-mapped timer `/soc@0/timer@17c20000` (`arm,armv7-timer-mem`, 19.2 MHz) is enabled; the driver is already built, so no config change is needed. Measured on one tablet (H, 2026-11-08): the broadcast clockevent changed from the software `bc_hrtimer` to `arch_mem_timer`; with the screen off, the cluster cpuidle state went from zero uses to about 60–67% of the time; screen-off power dropped by only about 0.05 W (within the earlier run-to-run spread); screen-on showed almost no benefit. Key, lid, audio and time-sync checks were normal and no RCU stall or lockup appeared within about 15 minutes. Long-run (overnight) stability is unverified (U).
+
+## 视频编解码（SM8250 由 Venus 驱动，IRIS 关闭）
+
+启用 `videocc` 与 `video-codec`，视频保留区由私有内存提取器标记为 `dby_video_mem`。为避免 dtc 插入新引用后重排已有 phandle，新保留区使用未占用的 `0x1014`，沿用已有显式编号的做法；其他节点编号保持不变。
+
+固件是所有者从原厂 `modem.img` 提取的私有输入，不随仓库分发，来源与再分发许可门禁未关闭。固定在 Linux 7.2.10，使用 Venus 驱动：配置关闭 `VIDEO_QCOM_IRIS`、保留 `VIDEO_QCOM_VENUS=m`，因为上游 `!IS_ENABLED(CONFIG_VIDEO_QCOM_IRIS)` 条件下 Venus 才包含 SM8250 资源表和 `qcom,sm8250-venus` 匹配项。没有 `video-firmware` 子节点时走 TZ 路径（`qcom_mdt_load`、`qcom_scm_pas_auth_and_reset`、`qcom_scm_mem_protect_video_var`）。DTS、OPP、时钟及互联参数不变，不启用 no-TZ 的 `video-firmware` 子节点。
+
+设备包只打包 Venus 三个模块，用 `blacklist venus_core` 阻止自动探测，**需要时手动 `modprobe venus_core`**。
+
+**实机结果（H，一台平板，设备包 `20261102-28`，2026-11-10）**：`modprobe venus_core` 一次成功，固件被 TZ 接受；出现 `/dev/video0`（编码器）与 `/dev/video1`（解码器）。HEVC 与 VP9（profile 0）硬解正常；H.264 连续解码正常，但流结束或 seek 时固件会报系统错误，驱动约 3 s 后自行恢复，并丢失最后约 17 帧。1080p30 VP9 解码到空输出的对比中，硬解比软解低约 0.13 W（3 对交替测量，不含渲染与合成）。官方 Chrome 没有 V4L2 解码器，浏览器里用不上。未验证（U）：长时间播放、与桌面播放器的整合、休眠前后的行为。
 
 ## English summary
 

@@ -71,6 +71,7 @@ def generate(layout):
         if name == 'reserved-memory@80860000': label = 'cmd_db'
         if name.startswith('smem_region@'): label = 'dby_smem'
         if name.startswith('pil_gpu_region@'): label = 'dby_gpu_zap_mem'
+        if name.startswith('pil_video_region@'): label = 'dby_video_mem'
         if label:
             if label in found: raise ValueError('duplicate role')
             found.add(label)
@@ -79,7 +80,7 @@ def generate(layout):
         if props['no-map'] or name.startswith('cont_splash_region@'): line += ' no-map;'
         if label == 'cmd_db': line += ' compatible = "qcom,cmd-db";'
         lines.append(line + ' };')
-    if found != {'cmd_db', 'dby_smem', 'dby_gpu_zap_mem'}:
+    if found != {'cmd_db', 'dby_smem', 'dby_gpu_zap_mem', 'dby_video_mem'}:
         raise ValueError('missing required reservation role')
     splashes = [p for n, p in layout['reserved'].items() if n.startswith('cont_splash_region@')]
     if len(splashes) != 1: raise ValueError('ambiguous splash region')
