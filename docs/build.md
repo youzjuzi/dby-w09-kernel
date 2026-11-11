@@ -40,7 +40,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 6
+test "$#" -eq 10
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -75,14 +75,16 @@ For an owner-selected Bluetooth address, optionally pass `--bd-address-file` in 
 
 ## 4. Out-of-tree drivers
 
-The hub repository `dby-w09-linux` supplies backlight, battery and touch drivers. Use the same target source, build tree, configuration and toolchain as Image, after completing the full kernel/module build above. Both driver-copy destinations below must be new; retain old results before any repeat attempt.
+The hub repository `dby-w09-linux` supplies backlight, battery, charger, speaker and touch drivers. Use the same target source, build tree, configuration and toolchain as Image, after completing the full kernel/module build above. All four driver-copy destinations below must be new; retain old results before any repeat attempt.
 
 ```sh
 # Keep KERNEL_SOURCE and KERNEL_BUILD from the kernel recipe above.
 LINUX_REPO=/path/to/dby-w09-linux
 cp -R "$LINUX_REPO/drivers/rt8555-backlight" "$KERNEL_WORK/rt8555-backlight"
 cp -R "$LINUX_REPO/drivers/dby-fg-readonly" "$KERNEL_WORK/dby-fg-readonly"
-for driver in rt8555-backlight dby-fg-readonly; do
+cp -R "$LINUX_REPO/drivers/dby-chg" "$KERNEL_WORK/dby-chg"
+cp -R "$LINUX_REPO/drivers/dby-tfa9874" "$KERNEL_WORK/dby-tfa9874"
+for driver in rt8555-backlight dby-fg-readonly dby-chg dby-tfa9874; do
     make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
       M="$KERNEL_WORK/$driver" ARCH=arm64 \
       CROSS_COMPILE=aarch64-linux-gnu- modules
@@ -114,8 +116,12 @@ In-tree modules are selected from the kernel build by the bundle tool's `modules
 |---|---|
 | `kernel/drivers/video/backlight/rt8555-backlight.ko` | `$KERNEL_WORK/rt8555-backlight/rt8555-backlight.ko` |
 | `kernel/drivers/power/supply/dby-fg-readonly.ko` | `$KERNEL_WORK/dby-fg-readonly/dby-fg-readonly.ko` |
+| `kernel/drivers/power/supply/dby-chg.ko` | `$KERNEL_WORK/dby-chg/dby-chg.ko` |
+| `kernel/sound/soc/codecs/dby-tfa9874.ko` | `$KERNEL_WORK/dby-tfa9874/dby-tfa9874.ko` |
 | `kernel/drivers/input/touchscreen/nt36523-thp.ko` | Separately prepared touch build's `nt36523-thp.ko`, when enabled |
 
 The builder invokes `modules_install`, checks exact module vermagic, and validates supplied private inventories, modes and digests. With touch disabled, omit its module and firmware inputs; supplied private directories are still validated. The selected DTB is used unchanged rather than compared to a historical fixed DTB digest.
 
 A p1-only bundle is an intermediate output. The installer also requires the selected full or minimal rootfs archive; follow the hub tool documentation for rootfs construction and dry-run plans. Packaging or an offline build alone does not establish device operation. Neither the kernel repository nor the bundle builder assembles the U-Boot Recovery image.
+
+The current hub module list selects `dby-chg.ko` and `dby-tfa9874.ko` as well as backlight/gauge/touch. Add the two new external mappings above; the older example JSON supplies only three external mappings. A successful compile is not a source-clearance or hardware-safety result. The charger writes PMIC registers; the speakers have no protection algorithm. Read the hub driver notes before selecting a bundle. Audio also needs owner-supplied locked ADSP firmware; the historical radio/GPU/touch-only recipe does not reproduce the current audio system.

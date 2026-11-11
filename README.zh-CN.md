@@ -1,14 +1,16 @@
 # dby-w09-kernel
 
-在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的六个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
+当前源码含十个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
+
+在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的十个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
 
 [English](README.md) · [项目中心](https://github.com/youzjuzi/dby-w09-linux) · [U-Boot](https://github.com/youzjuzi/dby-w09-uboot) · [安装与上机检查](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md)
 
 ## 范围与证据
 
-**O 离线**：六补丁 fuzz=0 应用，锁定来源构建了 Image／模块及独立 DTB。注释整理后 DTB 哈希仍一致，有 36 条 dtc 警告，未通过 dt-schema 验收。**H 实机记录**：2026-11-02，一台已解锁、HarmonyOS 4.2.0.213 的 DBY-W09 用重建后的内核／DTB／模块启动了最小和完整桌面卡。显示、网络与 **R 用户桌面观察**详见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。
+**O 离线，历史六补丁基线**：六补丁 fuzz=0 应用，锁定来源构建了 Image／模块及独立 DTB。注释整理后 DTB 哈希仍一致，有 36 条 dtc 警告，未通过 dt-schema 验收。**H 实机记录**：2026-11-02，一台已解锁、HarmonyOS 4.2.0.213 的 DBY-W09 用重建后的内核／DTB／模块启动了最小和完整桌面卡。显示、网络与 **R 用户桌面观察**详见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。
 
-新基线触摸已于 2026-11-02 在 guard=0 下通过短时设备／交互检查（**H + R**），见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。本次三指手势、笔、触摸启动／长期可靠性、音频、耗电／长时间稳定性及其他设备／固件仍为 **U 未验证**。旧工程历史不能替代这些项目的本次验收，偶发黑屏仍未解决。补丁是设备专用开发修改，未按通用上游方案准备。
+新基线触摸已于 2026-11-02 在 guard=0 下通过短时设备／交互检查（**H + R**），见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。本次三指手势、笔、触摸启动／长期可靠性、休眠与长时间稳定性及其他设备／固件仍为 **U 未验证**。旧工程历史不能替代这些项目的本次验收，偶发黑屏仍未解决。补丁是设备专用开发修改，未按通用上游方案准备。
 
 蓝牙（2026-11-03，一台平板）：DTB 带所有者提供的控制器身份配置时，控制器 UP、BlueZ／GNOME 可见（**H + R**）；一只蓝牙鼠标配对并可用（**R**）。重启／休眠后回连、其他设备类型、A2DP 仍为 **U**。证据见上方中心仓库状态页。
 
@@ -40,7 +42,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 6
+test "$#" -eq 10
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -56,6 +58,8 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 归档锁定 SHA-256 为 `2feaa70453e91f541be6a5c9078d8168e081af45a3d9718054850538cff2ebf3`。保留 olddefconfig 最终结果：`PCI_PWRCTRL_PWRSEQ` 从 y 变为 m，中心仓库的 bundle 模块列表已包含它。保留完整源码／构建树供 `modules_install`，另提供匹配的树外驱动。不要用宿主机内核树或强改旧配置来掩盖差异。
 
 ## 记录产物（O）
+
+下表为历史六补丁基线摘要，不是当前十补丁配置、音频、霍尔／定时器或 Venus 板级增量的预期摘要。
 
 | 产物 | SHA-256 |
 |---|---|
@@ -73,7 +77,7 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 - [板级源码与构建](dts/README.md)。
 - [第三方材料](THIRD_PARTY.md)、[贡献](CONTRIBUTING.md)、[安全政策](SECURITY.md)。
 
-本项目是独立、非官方的设备移植工作，与 Huawei、Canonical/Ubuntu、Qualcomm 或 TeamWin 无关联，未获其认可或赞助；相关名称和商标属于各自权利人。本项目不提供厂商固件，也不保证适用于其他设备或固件。
+本项目是独立、非官方的设备移植工作，与 Huawei／HarmonyOS／MatePad、Canonical/Ubuntu、Qualcomm 或 TeamWin 无关联，未获其认可或赞助；相关名称和商标属于各自权利人。本项目不提供厂商固件，也不保证适用于其他设备或固件。
 
 运行集成系统需要已经解锁的 Bootloader。刷写会替换 Recovery，修改后的镜像不匹配原 AVB 摘要；错误镜像或操作可能导致设备无法启动或 Recovery 无法使用。写卡会清除所选 SD 卡的数据。先保留并核对自己的原厂回退镜像；恢复出厂前恢复原厂 Recovery。软件按现状提供，无担保。本库仅提供源码，集成前置条件与风险见中心仓库[安装指南](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md)。
 
@@ -81,4 +85,4 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 
 ## 实验性板载录音
 
-显式启用的板载录音拓扑（**H + R**，一台平板，2026-11-06）：配合中心仓库对应设备包（`20261102-12`／`20261102-13`）与补丁 `0008`，开机默认不启动 ADSP；手动两阶段启动后 ADSP／APR 上线、声卡 `sm8250 - DBY-W09` 注册，在全部四路模拟麦克风通道同时录到真信号（RMS −31.79／−47.82／−29.97／−32.63 dBFS），并通过只读 ALSA UCM2 在 PipeWire／GNOME 桌面自动呈现 4 声道 `Internal Microphone`、与 USB-C 数字耳机切换共存，重启后恢复默认停止状态。物理麦克风与通道对应关系及扬声器放音仍为 **U**。详见[音频说明](docs/audio-capture.md)。
+显式启用的板载录音拓扑（**H + R**，一台平板，2026-11-06）：配合中心仓库对应设备包（`20261102-12`／`20261102-13`）与补丁 `0008`，开机默认不启动 ADSP；手动两阶段启动后 ADSP／APR 上线、声卡 `sm8250 - DBY-W09` 注册，在全部四路模拟麦克风通道同时录到真信号（RMS −31.79／−47.82／−29.97／−32.63 dBFS），并通过只读 ALSA UCM2 在 PipeWire／GNOME 桌面自动呈现 4 声道 `Internal Microphone`、与 USB-C 数字耳机切换共存，重启后恢复默认停止状态。上述为历史录音阶段；后续四喇叭 S16LE 桌面短测通过（**H + R**，一台平板，2026-11-07，包 `20261102-16`），没有喇叭保护算法。物理麦克风映射、长期高音量使用仍为 **U**。详见[音频说明](docs/audio-capture.md)。

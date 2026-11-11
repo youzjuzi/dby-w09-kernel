@@ -1,14 +1,16 @@
 # dby-w09-kernel
 
-Six patches, configuration and board source for Linux 7.2.10 on the Huawei MatePad 11 (DBY-W09, Snapdragon 865 / SM8250). Full upstream sources and owner-specific data are supplied separately.
+Current source scope: ten patches plus board integration. Device evidence is limited to one tablet; audio, charging, power-key/cover and Venus results and unresolved defects are in the [hub status](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). An unlocked bootloader and replacement Recovery are required; an incorrect image can leave the device unbootable. **The installation workflow has not been independently validated by a third party starting from a blank card. Feedback is welcome.**
+
+Ten patches, configuration and board source for Linux 7.2.10 on the Huawei MatePad 11 (DBY-W09, Snapdragon 865 / SM8250). Full upstream sources and owner-specific data are supplied separately.
 
 [简体中文](README.zh-CN.md) · [Project hub](https://github.com/youzjuzi/dby-w09-linux) · [U-Boot](https://github.com/youzjuzi/dby-w09-uboot) · [Install and device checks](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.md)
 
 ## Scope and evidence
 
-**O**: six patches replay with fuzz=0; Image/modules and the standalone DTB were built from pinned sources. The comment cleanup reproduced the DTB hash with 36 dtc warnings, without dt-schema acceptance. **H**, 2026-11-02: the rebuilt kernel/DTB/module combination booted minimal and full desktop cards on one unlocked DBY-W09/HarmonyOS 4.2.0.213. Display/network records and **R** desktop observations are detailed in the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md).
+**O, historical six-patch baseline**: six patches replay with fuzz=0; Image/modules and the standalone DTB were built from pinned sources. The comment cleanup reproduced the DTB hash with 36 dtc warnings, without dt-schema acceptance. **H**, 2026-11-02: the rebuilt kernel/DTB/module combination booted minimal and full desktop cards on one unlocked DBY-W09/HarmonyOS 4.2.0.213. Display/network records and **R** desktop observations are detailed in the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md).
 
-Touch passed a short rebuilt-baseline device/interaction check with guard=0 (**H + R**, 2026-11-02); see the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). Current three-finger gestures, stylus, touch startup/long-term reliability, audio, power/long-term stability and other devices/firmware remain **U**. Historical earlier-project results do not validate those items here. Intermittent black screen remains unresolved. Patches are device-specific development work, not ready for general upstream use.
+Touch passed a short rebuilt-baseline device/interaction check with guard=0 (**H + R**, 2026-11-02); see the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). Current three-finger gestures, stylus, touch startup/long-term reliability, suspend and long-term stability and other devices/firmware remain **U**. Historical earlier-project results do not validate those items here. Intermittent black screen remains unresolved. Patches are device-specific development work, not ready for general upstream use.
 
 Bluetooth on one tablet (2026-11-03): with an owner-supplied DTB controller identity, the controller is UP and visible to BlueZ/GNOME (**H + R**); one Bluetooth mouse paired and worked (**R**). Reconnection after reboot/sleep, other device types and A2DP remain **U**. See the hub status page linked above.
 
@@ -40,7 +42,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 6
+test "$#" -eq 10
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -56,6 +58,8 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 The archive is pinned to SHA-256 `2feaa70453e91f541be6a5c9078d8168e081af45a3d9718054850538cff2ebf3`. Keep the final olddefconfig result: `PCI_PWRCTRL_PWRSEQ` changes from y to m, and the hub bundle module list includes that module. Keep the complete source/build pair for `modules_install`, along with matching external drivers. Do not use the host kernel's build tree or force the old config to hide a difference.
 
 ## Recorded outputs (O)
+
+These are the historical six-patch baseline hashes, not expected hashes for the current ten-patch configuration, audio, Hall/timer or Venus board additions.
 
 | Output | SHA-256 |
 |---|---|
@@ -73,7 +77,7 @@ Use the [build guide](docs/build.md#5-bundle-handoff) for source/build/DTB/exter
 - [Board source and build](dts/README.md).
 - [Third-party materials](THIRD_PARTY.md), [contributing](CONTRIBUTING.md), [security](SECURITY.md).
 
-This is an independent, unofficial device-porting project. It is not affiliated with, endorsed by, or sponsored by Huawei, Canonical/Ubuntu, Qualcomm or TeamWin. Names and trademarks belong to their respective owners. Vendor firmware is not provided, and compatibility with other devices or firmware is not guaranteed.
+This is an independent, unofficial device-porting project. It is not affiliated with, endorsed by, or sponsored by Huawei/HarmonyOS/MatePad, Canonical/Ubuntu, Qualcomm or TeamWin. Names and trademarks belong to their respective owners. Vendor firmware is not provided, and compatibility with other devices or firmware is not guaranteed.
 
 An already unlocked bootloader is required for the integrated system. Flashing replaces Recovery, and the modified image does not match the original AVB digest. An incorrect image or operation can make the device unbootable or Recovery unusable. Installation erases the selected SD card. Keep and verify your own stock rollback image, and restore stock Recovery before a factory reset. The software is provided as is, without warranty. This is a source repository; follow the hub's [installation guide](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.md) for integration prerequisites and risks.
 

@@ -8,7 +8,7 @@
 
 ## 1. 准备输入与工具
 
-- 本仓库的六个补丁和 `config/dby-w09.config`。
+- 本仓库的十个补丁和 `config/dby-w09.config`。
 - 自行取得上游 `linux-7.2.10.tar.xz`；预期 SHA-256 在下方命令及首页中。摘要一致说明输入与本项目基线一致，不代替来源核实。
 - Linux 主机、主机 C 编译器及开发头文件、arm64 GCC/binutils（前缀 `aarch64-linux-gnu-`）。已有配置记录的 GCC 版本为 15.2；其他版本可能影响配置、警告和产物，本文不承诺逐字节复现。
 - GNU make、patch、tar、xz、bash、coreutils（含 sha256sum、realpath）、bc、bison、flex、Python 3，以及 OpenSSL/libcrypto 和 libelf 开发文件。具体最低要求以该压缩包中的 `Documentation/process/changes.rst` 为准；如修改配置启用 BTF，还需匹配的 pahole。
@@ -43,7 +43,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 6
+test "$#" -eq 10
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -85,14 +85,16 @@ DTB 步骤可选用 `--bd-address-file` 提供所有者选择的蓝牙地址；�
 LINUX_REPO=/path/to/dby-w09-linux
 cp -R "$LINUX_REPO/drivers/rt8555-backlight" "$KERNEL_WORK/rt8555-backlight"
 cp -R "$LINUX_REPO/drivers/dby-fg-readonly" "$KERNEL_WORK/dby-fg-readonly"
-for driver in rt8555-backlight dby-fg-readonly; do
+cp -R "$LINUX_REPO/drivers/dby-chg" "$KERNEL_WORK/dby-chg"
+cp -R "$LINUX_REPO/drivers/dby-tfa9874" "$KERNEL_WORK/dby-tfa9874"
+for driver in rt8555-backlight dby-fg-readonly dby-chg dby-tfa9874; do
     make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
       M="$KERNEL_WORK/$driver" ARCH=arm64 \
       CROSS_COMPILE=aarch64-linux-gnu- modules
 done
 ```
 
-两个 `.ko` 会生成在各自的驱动工作副本中。驱动的设备树节点、依赖和使用范围分别见主仓库 `drivers/rt8555-backlight/README.md`、`drivers/dby-fg-readonly/README.md`；编译成功不代表节点已正确接入。
+四个 `.ko` 会生成在各自的驱动工作副本中。四个树外驱动还包括充电与喇叭；其设备树节点、依赖和使用范围见主仓库 `drivers/rt8555-backlight/README.md`、`drivers/dby-fg-readonly/README.md`；编译成功不代表节点已正确接入。
 
 触摸另需固定计划 JSON 和生成的 `thp-plan-table.h`；按主仓库[可选触摸接入](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md#31-启用触摸可选)准备输入，用同一对目标内核源码／构建树在独立模块目录内编译。提取固件本身不会生成计划数据。bundle 要求匹配的十参数模块与固件，固定关闭未验收的 guard；板级节点已存在，不需改 DTB 或内核。独立的短时 H + R 记录不证明长期稳定或与较早模块的实机等价。
 
@@ -117,8 +119,12 @@ done
 |---|---|
 | `kernel/drivers/video/backlight/rt8555-backlight.ko` | `$KERNEL_WORK/rt8555-backlight/rt8555-backlight.ko` |
 | `kernel/drivers/power/supply/dby-fg-readonly.ko` | `$KERNEL_WORK/dby-fg-readonly/dby-fg-readonly.ko` |
+| `kernel/drivers/power/supply/dby-chg.ko` | `$KERNEL_WORK/dby-chg/dby-chg.ko` |
+| `kernel/sound/soc/codecs/dby-tfa9874.ko` | `$KERNEL_WORK/dby-tfa9874/dby-tfa9874.ko` |
 | `kernel/drivers/input/touchscreen/nt36523-thp.ko` | 独立触摸构建目录里的 `nt36523-thp.ko`，仅开启时提供 |
 
 构建器调用 `modules_install`，检查精确模块 vermagic，并校验所提供私有输入的清单、权限与摘要。关闭触摸时省略其模块和固件输入；显式提供的私有目录仍会被校验。所选 DTB 原样使用，不再与历史固定 DTB 摘要比较。
 
 仅含 p1 的 bundle 是中间产物；安装器还需要所选的完整或最小 rootfs 归档。按主仓库工具说明构建根系统并先查看 dry-run 计划。打包或离线构建成功均不等于实机运行成功；内核仓库和 bundle 构建器均不负责组装 U-Boot 的 Recovery 镜像。
+
+当前中心仓库模块列表除背光／电量计／触摸外还选择 `dby-chg.ko` 和 `dby-tfa9874.ko`，旧示例 JSON 只有三项树外映射，须补上表中的两项。编译成功不代表来源许可或硬件安全已核清。充电驱动写 PMIC 寄存器，喇叭没有保护算法，选包前先读中心仓库驱动说明。音频还需所有者提供锁定的 ADSP 固件；历史 radio／GPU／touch 配方不能复现当前完整音频系统。

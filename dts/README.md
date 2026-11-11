@@ -52,7 +52,7 @@ dtc 成功但报告 36 条警告，原始日志保存在私有实验记录；未
 <a id="bluetooth-address"></a>
 ## 蓝牙地址（可选私有输入） / Bluetooth address (optional private input)
 
-在一台平板上观察到：缺少地址时控制器被标为未配置，BlueZ 看不到它。可在构建时提供 `--bd-address-file`，把所有者选择的地址写入输出目录中的板级副本；板级源码仍不含地址。此路径的编译和字节检查为离线证据（O），带地址的 DTB 在一台平板上已启动：控制器 UP、BlueZ／GNOME 可见（**H + R**，2026-11-03，设备包 20261102-4）；配对、回连与音频仍为 **U**。
+在一台平板上观察到：缺少地址时控制器被标为未配置，BlueZ 看不到它。可在构建时提供 `--bd-address-file`，把所有者选择的地址写入输出目录中的板级副本；板级源码仍不含地址。此路径的编译和字节检查为离线证据（O），带地址的 DTB 在一台平板上已启动：控制器 UP、BlueZ／GNOME 可见（**H + R**，2026-11-03，设备包 20261102-4）；一只蓝牙鼠标配对并可用（**R**，2026-11-03）；回连与 A2DP 仍为 **U**。
 
 文件须为非符号链接的普通文件，最多 64 字节，UTF-8/ASCII，内容严格为一行 `AA:BB:CC:DD:EE:FF`，仅允许末尾有一个 LF 换行，不接受空格、CRLF 或额外行。地址须为本地管理单播地址（首字节低两位为二进制 `10`），拒绝全零和控制器默认占位值。每台设备应选择不同地址，不要复制别人的地址，也不要使用带厂商前缀的公有地址。下面是虚构格式示例，使用前替换为自己选择的唯一地址；这项格式检查不能保证无线环境中没有冲突。
 
@@ -69,7 +69,7 @@ python3 -B tools/build-board-dtb.py \
 
 地址按小端字节序写入 `uart6/bluetooth/local-bd-address`，DTB 哈希因此与不带参数时不同。不提供参数时板级副本与 DTB 保持原样。`build-info.json` 只记录 `bd_address` 为 `supplied` 或 `none`，终端不打印地址；生成的 DTS、DTB 和整个构建输出目录均须保持私有。
 
-On one tablet, omitting the address left the controller unconfigured and invisible to BlueZ. The optional `--bd-address-file` writes an owner-selected address into the output board copy; the public board source still contains no address. Compilation and byte checks are offline evidence (O); a DTB with an address booted on one tablet with the controller UP and visible to BlueZ/GNOME (**H + R**, 2026-11-03, bundle 20261102-4); pairing, reconnection and audio remain **U**.
+On one tablet, omitting the address left the controller unconfigured and invisible to BlueZ. The optional `--bd-address-file` writes an owner-selected address into the output board copy; the public board source still contains no address. Compilation and byte checks are offline evidence (O); a DTB with an address booted on one tablet with the controller UP and visible to BlueZ/GNOME (**H + R**, 2026-11-03, bundle 20261102-4); one Bluetooth mouse paired and worked (**R**, 2026-11-03); reconnection and A2DP remain **U**.
 
 Supply a regular, non-symlink file of at most 64 bytes, containing exactly `AA:BB:CC:DD:EE:FF` in UTF-8/ASCII, optionally followed by one LF. Spaces, CRLF and extra lines are rejected. Use a locally administered unicast address (the first byte's low two bits must be binary `10`); zero and controller placeholder addresses are rejected. Choose a distinct address for each device, do not copy another owner's address or use a vendor-assigned public prefix. Replace the fictional example above with your own unique choice; format validation cannot guarantee freedom from collisions.
 

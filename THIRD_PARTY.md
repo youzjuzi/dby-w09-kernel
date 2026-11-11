@@ -47,3 +47,9 @@ See [the source review](docs/provenance-review.md) for pinned archive/member has
 ## Reconstructed board source
 
 The standalone board DTS is assembled from project source layers and uses external upstream includes; it does not restore the withdrawn decompiled snapshot. See [board provenance](dts/provenance.md) for source layers, upstream hashes, retained PM8150B attribution and owner-generated private memory inputs. No hardware verification was claimed by the initial 2026-10-29 source reconstruction/check alone. Later, separately scoped device evidence is recorded in the [README](README.md#scope-and-evidence); it does not establish complete provenance clearance.
+
+## Board integration added after the initial release candidate
+
+The project board source adds onboard audio/TDM routes, a PM8150B charger node, Hall input wiring and its PM8150L LDO8 supply, the standard MMIO timer enable and the video reservation reference. GPIO/supply parameters were checked against owner runtime-FDT evidence; that input is not distributed. These project edits retain the board file's `GPL-2.0-only AND BSD-3-Clause` notice and the existing upstream notices; the factual comparison does not license the original FDT or close its historical attribution gaps. The timer uses upstream `ARM_ARCH_TIMER` support. Patches 0007–0010 are project changes to the upstream ADC/ASoC files listed above, not imported vendor source files.
+
+板级增量含音频／TDM、充电节点、霍尔 GPIO／LDO8、标准 MMIO 定时器及视频保留区引用。GPIO／供电参数经所有者运行时 FDT 核对，原输入不分发；保留现有板级双重声明和上游署名，不由事实核对推导原厂 FDT 的许可。0007–0010 是上表上游 ADC／ASoC 文件的项目修改，历史归属缺口仍未关闭。

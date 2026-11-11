@@ -99,3 +99,9 @@ Patch 0002's 104 on packets and 5 off packets exactly match the historical runti
 Both downstream reference C files match members of the pinned local vendor archive and carry explicit GPL-2.0-only notices. This verifies those reference files, not every change in patch 0005 or the original download page. An eleven-file board DTS include chain was recovered, but complete input attribution and correspondence to the published snapshot are still unverified.
 
 The initial audit proposed omitting unresolved panel arrays and the decompiled snapshot. Subsequent source separation removed both from the distributed tree and supplied extraction tools/reconstructed board source. The upstream count attribution was resolved separately above; downstream download provenance, data permissions and complete historical input attribution remain unresolved.
+
+## Incremental source review, 2026-11-11 / 增量范围
+
+The later ADC/ASoC patches 0007–0010 are listed in THIRD_PARTY with the local Linux 7.2.10 target-file SPDX values. Board audio, charger, Hall/supply, timer and video-reservation additions are described in dts/provenance.md. Existing downstream, panel-data and historical board attribution gaps remain open. Firmware binaries and generated owner data remain excluded. This update records source scope; it adds no build or device validation and makes no complete licence-clearance claim.
+
+后续 ADC／ASoC 补丁 0007–0010 的本地上游目标 SPDX 见 THIRD_PARTY；音频、充电、霍尔供电、定时器与视频保留区的板级来源见 dts/provenance.md。原有下游、面板数据和历史板级归属缺口仍在；不包含固件或生成私有数据。本次仅更新来源范围，不新增构建／设备证据，不声明完整许可核清。

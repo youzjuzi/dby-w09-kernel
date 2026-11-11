@@ -194,3 +194,11 @@ include/dt-bindings/input/linux-event-codes.h
  * under the terms of the GNU General Public License version 2 as published by
  * the Free Software Foundation.
  */
+
+Project board additions after the initial reconstruction: audio/TDM routing,
+PM8150B charger binding, Hall GPIO/supply wiring, MMIO timer enable and video
+reservation reference. Existing upstream notices above remain applicable.
+Owner runtime-FDT comparison inputs and generated memory data are excluded;
+this notice grants no rights to those inputs.
+后续板级修改保留上述上游声明；原厂 FDT 核对输入和生成内存数据不分发，
+本声明不授予这些输入的再分发权。
