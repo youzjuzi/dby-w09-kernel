@@ -90,7 +90,7 @@
 &{/soc@0/usb@a6f8800} { status="disabled"; };
 &{/soc@0/system-cache-controller@9200000} { status="disabled"; };
 &{/soc@0/usb@a8f8800} { status="disabled"; };
-/* V1a: manual video codec (iris) bring-up, device operation unverified (U, 2026-11-08). */
+/* Video codec (Venus driver): decoding verified on one tablet (H, 2026-11-10); the driver is loaded manually. */
 &{/soc@0/clock-controller@abf0000} { status = "okay"; };
 &{/soc@0/video-codec@aa00000} {
  status = "okay";
