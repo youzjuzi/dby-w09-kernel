@@ -77,6 +77,8 @@ For an owner-selected Bluetooth address, optionally pass `--bd-address-file` in 
 
 The hub repository `dby-w09-linux` supplies backlight, battery, charger, speaker and touch drivers. Use the same target source, build tree, configuration and toolchain as Image, after completing the full kernel/module build above. All four driver-copy destinations below must be new; retain old results before any repeat attempt.
 
+Before copying or compiling the speaker module, [generate its private configuration tables](https://github.com/youzjuzi/dby-w09-linux/blob/main/drivers/dby-tfa9874/README.md) from the owner's own files. Set `TFA_TABLES_DIR` to the absolute directory holding the generated header; missing inputs fail the build. The tables and modules containing them are not distributed.
+
 ```sh
 # Keep KERNEL_SOURCE and KERNEL_BUILD from the kernel recipe above.
 LINUX_REPO=/path/to/dby-w09-linux
@@ -84,10 +86,11 @@ cp -R "$LINUX_REPO/drivers/rt8555-backlight" "$KERNEL_WORK/rt8555-backlight"
 cp -R "$LINUX_REPO/drivers/dby-fg-readonly" "$KERNEL_WORK/dby-fg-readonly"
 cp -R "$LINUX_REPO/drivers/dby-chg" "$KERNEL_WORK/dby-chg"
 cp -R "$LINUX_REPO/drivers/dby-tfa9874" "$KERNEL_WORK/dby-tfa9874"
+: "${TFA_TABLES_DIR:?Generate private speaker tables first}"
 for driver in rt8555-backlight dby-fg-readonly dby-chg dby-tfa9874; do
     make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
       M="$KERNEL_WORK/$driver" ARCH=arm64 \
-      CROSS_COMPILE=aarch64-linux-gnu- modules
+      CROSS_COMPILE=aarch64-linux-gnu- TFA_TABLES_DIR="$TFA_TABLES_DIR" modules
 done
 ```
 

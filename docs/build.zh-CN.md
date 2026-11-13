@@ -80,6 +80,8 @@ DTB 步骤可选用 `--bd-address-file` 提供所有者选择的蓝牙地址；�
 
 `dby-w09-linux` 提供背光、电量计、充电、喇叭与触摸驱动。必须使用与 Image 相同的目标源码、构建树、配置和工具链，先完成上面的内核及模块构建。下面在主机创建独立驱动工作副本；四个目标目录也必须尚不存在，重复执行前先保留旧结果。
 
+复制和编译喇叭模块前，先按[主仓库说明](https://github.com/youzjuzi/dby-w09-linux/blob/main/drivers/dby-tfa9874/README.md)从所有者自己的文件生成私有配置表，并把 `TFA_TABLES_DIR` 设置为生成头所在的绝对目录；缺少输入时构建报错。这些表及含表的模块不分发。
+
 ```sh
 # Keep KERNEL_SOURCE and KERNEL_BUILD from the kernel recipe above.
 LINUX_REPO=/path/to/dby-w09-linux
@@ -87,10 +89,11 @@ cp -R "$LINUX_REPO/drivers/rt8555-backlight" "$KERNEL_WORK/rt8555-backlight"
 cp -R "$LINUX_REPO/drivers/dby-fg-readonly" "$KERNEL_WORK/dby-fg-readonly"
 cp -R "$LINUX_REPO/drivers/dby-chg" "$KERNEL_WORK/dby-chg"
 cp -R "$LINUX_REPO/drivers/dby-tfa9874" "$KERNEL_WORK/dby-tfa9874"
+: "${TFA_TABLES_DIR:?Generate private speaker tables first}"
 for driver in rt8555-backlight dby-fg-readonly dby-chg dby-tfa9874; do
     make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
       M="$KERNEL_WORK/$driver" ARCH=arm64 \
-      CROSS_COMPILE=aarch64-linux-gnu- modules
+      CROSS_COMPILE=aarch64-linux-gnu- TFA_TABLES_DIR="$TFA_TABLES_DIR" modules
 done
 ```
 

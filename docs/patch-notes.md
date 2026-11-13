@@ -52,6 +52,8 @@ active-high reset on GPIO109, and Primary TDM pins 138..141. New phandles occupy
 0x100e..0x1013. The DTB test checks these values and restricts raw property changes
 to the audio allowlist, including only the DMA status property. WSA stays disabled.
 
+The companion amplifier module requires [private table generation](https://github.com/youzjuzi/dby-w09-linux/blob/main/drivers/dby-tfa9874/README.md) before building, with `TFA_TABLES_DIR` pointing to the generated header. These owner inputs are not distributed. / 喇叭模块构建前须从所有者自己的配置生成私有表，并通过 `TFA_TABLES_DIR` 指定；所有者数据不分发。
+
 The companion amplifier module defaults locked off. UCM2 remains microphone-only.
 Host patch replay, compilation and DT comparison are O; I2C probe, TDM timing,
 speaker output and coexistence with capture still require owner device testing (U).
