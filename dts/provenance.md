@@ -75,6 +75,7 @@ The fixed sink PDOs 5 V / 2 A and 9 V / 1.5 A follow the owner stock FDT
 charger `power-supplies` reference names the upstream Type-C node so standard
 power-supply registration deferral and `external_power_changed` notifications
 can be used. No new voltage-override or PD-PHY register programming is included.
-These are offline candidate declarations (O), not evidence of a negotiated 9 V
-contract or working 9 V charging. Regular dtc handle numbering is used; numeric
+On one tablet (2026-11-16, H) a Lenovo PD charger negotiated fixed 9 V/1.5 A
+and charged with the driver's input-current control; a 3 A Rp charger, unplug,
+PC port and OTG behaved as expected. Regular dtc handle numbering is used; numeric
 phandle changes are not functional wiring changes.
