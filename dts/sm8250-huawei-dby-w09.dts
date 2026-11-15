@@ -40,6 +40,7 @@
 			led@1 {
 				reg = <1>;
 				color = <LED_COLOR_ID_RED>;
+				linux,default-trigger = "dby-chg-red";
 				function = LED_FUNCTION_CHARGING;
 				default-state = "off";
 			};
@@ -47,6 +48,7 @@
 			led@2 {
 				reg = <2>;
 				color = <LED_COLOR_ID_GREEN>;
+				linux,default-trigger = "dby-chg-green";
 				function = LED_FUNCTION_CHARGING;
 				default-state = "off";
 			};
@@ -583,6 +585,10 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 		charger@1000 {
 			compatible = "dby,pm8150b-charger";
 			reg = <0x1000>;
+			interrupts = <0x2 0x10 0x1 IRQ_TYPE_EDGE_RISING>,
+				     <0x2 0x13 0x4 IRQ_TYPE_EDGE_BOTH>,
+				     <0x2 0x16 0x1 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "chg-state-change", "usbin-plugin", "wdog-bark";
 			io-channels = <&pm8150b_adc ADC5_BAT_THERM_30K_PU>;
 			io-channel-names = "batt_therm";
 		};

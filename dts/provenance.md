@@ -32,7 +32,7 @@ The charging indicator uses minimal PM8150L parent/LPG declarations from upstrea
 `pm8150l.dtsi`, retaining the Linux Foundation/Linaro notice in the board source.
 The empty USID 4 node supplies read-only revision information; only USID 5 hosts
 the LPG. Owner runtime-FDT wiring maps PWM 0/red and PWM 1/green to upstream LED
-reg 1/2. Stock brightness ratios 70/255 and 120/255 are applied by userspace.
+reg 1/2. Stock brightness ratios 70/255 and 120/255 are now applied by the charger LED triggers (previously userspace).
 No blue, flash, WLED or other PM8150L child is enabled. On one tablet (2026-11-15,
 H + R) the red/green channels and the shutdown turn-off were confirmed.
 
@@ -40,3 +40,15 @@ H + R) the red/green channels and the shutdown turn-off were confirmed.
 仅供读取版本，USID 5 承载红绿灯；原厂运行时 FDT 的 PWM 0/1 对应上游
 LED reg 1/2，亮度比例为 70/255、120/255。未启用蓝灯、闪光灯、WLED
 及其它子设备。2026-11-15 一台平板实机确认红绿通道与关机灭灯(H + R)。
+
+
+The charger IRQ tuples come from owner stock runtime-FDT `qpnp-smb5` nodes:
+`chg-state-change` at USID 2/block 0x10/bit 1 rising,
+`usbin-plugin` at USID 2/block 0x13/bit 4 both edges, and
+`wdog-bark` at USID 2/block 0x16/bit 1 rising. The Linux 7.2.10 upstream
+`drivers/power/supply/qcom_smbx.c` named threaded-IRQ and watchdog-bark handling
+provided the API/handling pattern; its PMIC support is not claimed for PM8150B.
+The charger retains its own health and write gates. The two LPG
+`linux,default-trigger` properties select project simple LED triggers;
+no additional PMIC peripherals are enabled. IRQ and kernel-trigger changes
+have offline evidence only (O); device behavior remains to be validated.
