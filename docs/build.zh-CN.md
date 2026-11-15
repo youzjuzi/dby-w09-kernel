@@ -137,3 +137,5 @@ done
 使用 0001–0012 十二个补丁及 README 的可复现环境变量。当前匹配的所有者面板、内存、触摸计划和 TFA 头文件可以复用，不代表本轮重做提取；内存 include 必须带 Venus 预留，蓝牙地址仍由所有者提供。更新后的示例 JSON 含五个树外模块映射，但占位路径和提交必须替换。
 
 可选内核测试的文件名含连字符，unittest discover 不收集；用 shell 循环逐个执行 `python3 -I -B "$test_file"`。补丁测试还要求仓库旁 `../upstream/linux-7.2.10` 的原始文件，必须从已核对的压缩包新解压测试需要的文件，不能复用旧树或拿已经打补丁的源码充当原始输入。R4 的此目录只作测试 fixture。
+
+R4 实测发现，单设 `SOURCE_DATE_EPOCH` 不会固定 Linux 7.2.10 的 UTS 时间或内置 initramfs mtime：`init/Makefile` 默认调用 date，`usr/Makefile` 接受的是 `KBUILD_BUILD_TIMESTAMP`。本轮照 README 使用实际构建时间；未来若专门做字节复现，还须显式指定 `KBUILD_BUILD_TIMESTAMP` 和 `KBUILD_BUILD_VERSION`，不能倒称本轮已如此执行。新旧 Image 均为 42,011,136 字节，只有 70 字节不同，均已定位到两个版本/时间字段、内核与 vDSO build-id、空 initramfs 的三个 mtime；其他字节完全相同（O）。

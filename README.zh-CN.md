@@ -88,3 +88,5 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 ## 实验性板载录音
 
 显式启用的板载录音拓扑（**H + R**，一台平板，2026-11-06）：配合中心仓库对应设备包（`20261102-12`／`20261102-13`）与补丁 `0008`，开机默认不启动 ADSP；手动两阶段启动后 ADSP／APR 上线、声卡 `sm8250 - DBY-W09` 注册，在全部四路模拟麦克风通道同时录到真信号（RMS −31.79／−47.82／−29.97／−32.63 dBFS），并通过只读 ALSA UCM2 在 PipeWire／GNOME 桌面自动呈现 4 声道 `Internal Microphone`、与 USB-C 数字耳机切换共存，重启后恢复默认停止状态。上述为历史录音阶段；后续四喇叭 S16LE 桌面短测通过（**H + R**，一台平板，2026-11-07，包 `20261102-16`），没有喇叭保护算法。物理麦克风映射、长期高音量使用仍为 **U**。详见[音频说明](docs/audio-capture.md)。
+
+`SOURCE_DATE_EPOCH` 单独不能固定本内核的 UTS/initramfs 时间；R4 记录的是实际构建时间。专门做字节复现所需的其他变量见[构建补充](docs/build.zh-CN.md)。
