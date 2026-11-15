@@ -1,0 +1,188 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] drm/panel: nt36523: sequence optional panel supplies
+
+Keep legacy DT power calls unchanged. Additional supplies opt into an
+ordered power sequence and one initial power cycle. Hardware validation
+is pending; the minimum off time is an experimental assumption.
+
+--- a/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
++++ b/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
+@@ -37,6 +37,15 @@
+ 
+   vddio-supply:
+     description: regulator that supplies the I/O voltage
++
++  vci-supply:
++    description: regulator supplying the panel analog voltage
++
++  vsp-supply:
++    description: regulator enabling positive panel bias
++
++  vsn-supply:
++    description: regulator enabling negative panel bias
+ 
+ required:
+   - compatible
+--- a/drivers/gpu/drm/panel/panel-novatek-nt36523.c
++++ b/drivers/gpu/drm/panel/panel-novatek-nt36523.c
+@@ -70,6 +70,9 @@
+ 	/* DBY-W09: Own the external backlight separately from drm_panel. */
+ 	struct backlight_device *ext_backlight;
+ 	struct regulator *vddio;
++	struct regulator *vci, *vsp, *vsn;
++	unsigned long power_enabled;
++	bool boot_power_cycled;
+ };
+ 
+ struct nt36523_reset_step {
+@@ -1170,12 +1173,116 @@
+ 	usleep_range(12000, 13000);
+ }
+ 
++/* Only DTs describing additional rails use the complete power sequence. */
++static bool nt36523_full_power(struct panel_info *pinfo)
++{
++	return pinfo->vci || pinfo->vsp || pinfo->vsn;
++}
++
++static int nt36523_power_off(struct panel_info *pinfo)
++{
++	struct regulator *rails[] = { pinfo->vci, pinfo->vddio, pinfo->vsp, pinfo->vsn };
++	const char * const names[] = { "vci", "vddio", "vsp", "vsn" };
++	const unsigned int delay_ms[] = { 1, 0, 10, 5 };
++	int i, ret, first_error = 0;
++
++	/* Logical assertion is physical low for the active-low reset GPIO. */
++	gpiod_set_value_cansleep(pinfo->reset_gpio, 1);
++	msleep(5);
++	for (i = ARRAY_SIZE(rails) - 1; i >= 0; i--) {
++		if (!(pinfo->power_enabled & BIT(i)))
++			continue;
++		ret = regulator_disable(rails[i]);
++		if (ret) {
++			dev_err(pinfo->panel.dev, "disable %s failed: %d\n", names[i], ret);
++			if (!first_error)
++				first_error = ret;
++		} else {
++			pinfo->power_enabled &= ~BIT(i);
++			if (delay_ms[i])
++				msleep(delay_ms[i]);
++		}
++	}
++	return first_error;
++}
++
++static int nt36523_power_on(struct panel_info *pinfo)
++{
++	struct regulator *rails[] = { pinfo->vci, pinfo->vddio, pinfo->vsp, pinfo->vsn };
++	const char * const names[] = { "vci", "vddio", "vsp", "vsn" };
++	const unsigned int delay_ms[] = { 1, 2, 2, 2 };
++	int i, ret;
++
++	/* A failed disable retains its reference; never acquire it twice. */
++	if (pinfo->power_enabled) {
++		ret = nt36523_power_off(pinfo);
++		if (ret)
++			return ret;
++	}
++	for (i = 0; i < ARRAY_SIZE(rails); i++) {
++		if (!rails[i])
++			continue;
++		ret = regulator_enable(rails[i]);
++		if (ret) {
++			dev_err(pinfo->panel.dev, "enable %s failed: %d\n", names[i], ret);
++			nt36523_power_off(pinfo);
++			return ret;
++		}
++		pinfo->power_enabled |= BIT(i);
++		msleep(delay_ms[i]);
++	}
++	return 0;
++}
++
++static int nt36523_prepare_power(struct panel_info *pinfo)
++{
++	int ret;
++
++	if (!pinfo->boot_power_cycled) {
++		ret = nt36523_power_on(pinfo);
++		if (ret)
++			return ret;
++		ret = nt36523_power_off(pinfo);
++		if (ret)
++			return ret;
++		/*
++		 * Firmware off-stage delays total 33 ms. The 100 ms minimum is
++		 * an external experiment's proposal, not validated on this board.
++		 */
++		msleep(100);
++		pinfo->boot_power_cycled = true;
++	}
++	return nt36523_power_on(pinfo);
++}
++
++static int nt36523_get_optional_power(struct panel_info *pinfo)
++{
++	struct regulator **rails[] = { &pinfo->vci, &pinfo->vsp, &pinfo->vsn };
++	const char * const names[] = { "vci", "vsp", "vsn" };
++	int i, ret;
++
++	for (i = 0; i < ARRAY_SIZE(rails); i++) {
++		*rails[i] = devm_regulator_get_optional(pinfo->panel.dev, names[i]);
++		if (!IS_ERR(*rails[i]))
++			continue;
++		ret = PTR_ERR(*rails[i]);
++		if (ret != -ENODEV)
++			return dev_err_probe(pinfo->panel.dev, ret,
++					     "failed to get %s regulator\n", names[i]);
++		*rails[i] = NULL;
++	}
++	return 0;
++}
++
+ static int nt36523_prepare(struct drm_panel *panel)
+ {
+ 	struct panel_info *pinfo = to_panel_info(panel);
+ 	int ret;
+ 
+-	ret = regulator_enable(pinfo->vddio);
++	if (nt36523_full_power(pinfo))
++		ret = nt36523_prepare_power(pinfo);
++	else
++		ret = regulator_enable(pinfo->vddio);
+ 	if (ret) {
+ 		dev_err(panel->dev, "failed to enable vddio regulator: %d\n", ret);
+ 		return ret;
+@@ -1185,7 +1292,10 @@
+ 
+ 	ret = pinfo->desc->init_sequence(pinfo);
+ 	if (ret < 0) {
+-		regulator_disable(pinfo->vddio);
++		if (nt36523_full_power(pinfo))
++			nt36523_power_off(pinfo);
++		else
++			regulator_disable(pinfo->vddio);
+ 		dev_err(panel->dev, "failed to initialize panel: %d\n", ret);
+ 		return ret;
+ 	}
+@@ -1238,6 +1348,9 @@
+ static int nt36523_unprepare(struct drm_panel *panel)
+ {
+ 	struct panel_info *pinfo = to_panel_info(panel);
++
++	if (nt36523_full_power(pinfo))
++		return nt36523_power_off(pinfo);
+ 
+ 	gpiod_set_value_cansleep(pinfo->reset_gpio, 1);
+ 	regulator_disable(pinfo->vddio);
+@@ -1376,6 +1489,10 @@
+ 	pinfo->vddio = devm_regulator_get(dev, "vddio");
+ 	if (IS_ERR(pinfo->vddio))
+ 		return dev_err_probe(dev, PTR_ERR(pinfo->vddio), "failed to get vddio regulator\n");
++
++	ret = nt36523_get_optional_power(pinfo);
++	if (ret)
++		return ret;
+ 
+ 	pinfo->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+ 	if (IS_ERR(pinfo->reset_gpio))

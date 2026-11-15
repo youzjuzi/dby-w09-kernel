@@ -108,3 +108,11 @@ This standalone board source consolidates project DTS layers over pinned Linux 7
 Generate the private memory include from your own stock runtime FDT using the first command, then build with the second. The extractor accepts only the audited RAM/reservation fingerprint; do not bypass it for a different layout. Outputs stay private. Panel command extraction is separate, and no Bluetooth address is shipped.
 
 Two offline builds matched byte-for-byte. With reference phandles assigned only in a private comparison build, all 974 nodes matched the historical USB-integration reference except model text and omitted Bluetooth identity. The reservation table matched. There were 36 dtc warnings; dt-schema and device operation were not tested in that original source audit; later baseline boot evidence is linked above. The old device-pack digest rejection is a historical result; the current hub bundle configuration selects its DTB explicitly. Consult the hub's `tools/dby-bundle/README.md` for packaging requirements.
+
+## 面板供电 / Panel supplies
+
+板级 DTS 默认描述 VCI、IOVCC、VSP、VSN 四路供电，配合补丁 0011 使用；构建时不需要额外供电开关。VCI 使用 RPMh LDO11、HPM 初始模式，不设置 boot-on。IOVCC/VSP/VSN 使用三个 GPIO 控制的 fixed regulator，并设置 boot-on，使 probe 时按高电平申请 GPIO，避免在显示驱动接管前主动拉低。固定电压值只是描述，不表示 GPIO 能设定或测量电压。L14A/L5A 的既有 always-on 策略不变。
+
+boot-on 不等于 always-on：Linux 7.2.10 不为只有 boot-on 的 regulator 增加永久 use_count。面板首次 prepare 仍先 enable 各路，再 disable 到零，真实关闭 GPIO 开关、保持 100 ms 后重新上电；随后每次按完整供电顺序开关。此结论来自源码分析（O）；开机画面保留与实际时序效果仍待设备验证。
+
+The board DTS describes all four panel supplies by default, with patch 0011. VCI uses RPMh LDO11 in HPM without boot-on. The three GPIO-controlled fixed regulators use boot-on to request high GPIO levels at probe. They are not always-on: the first panel prepare still acquires and releases their enable references, switches them off, waits 100 ms and powers them on again. This is an offline source analysis, not hardware validation. Voltage properties describe the rails; GPIOs do not program or measure their voltage.

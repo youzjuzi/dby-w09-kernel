@@ -74,6 +74,7 @@ def main():
     (out/'dby-memory-private.dtsi').write_bytes(a.memory.read_bytes())
     # Copy the public board source so its quoted private include resolves here
     # before any stale private include in the user's kernel source tree.
+    # Panel supplies are board defaults; no build-time overlay is needed.
     board = (ROOT/'dts/sm8250-huawei-dby-w09.dts').read_bytes()
     if address is not None:
         board += bd_address_fragment(address)
