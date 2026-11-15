@@ -63,5 +63,7 @@ and maximum design voltage 4.4 V, using the task's stock battery-profile evidenc
 3.87 V is not supplied by that FDT and remains unverified. No temperature,
 resistance, OCV table or FG SRAM programming is added. The Linux 7.2.10
 power-supply core supplies these design properties from `monitored-battery`.
-This integration has offline evidence only (O); IRQ cadence and userspace
-properties still require device validation.
+On one tablet (2026-11-15, H) the IRQ registered with only its enable bit set
+and the four design properties appeared in sysfs; the IRQ fired about every
+60–130 s while discharging but not in step with displayed `capacity` changes,
+so it is kept only as an extra notification.
