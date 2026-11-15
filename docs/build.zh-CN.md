@@ -8,7 +8,7 @@
 
 ## 1. 准备输入与工具
 
-- 本仓库的十个补丁和 `config/dby-w09.config`。
+- 本仓库的十二个补丁和 `config/dby-w09.config`。
 - 自行取得上游 `linux-7.2.10.tar.xz`；预期 SHA-256 在下方命令及首页中。摘要一致说明输入与本项目基线一致，不代替来源核实。
 - Linux 主机、主机 C 编译器及开发头文件、arm64 GCC/binutils（前缀 `aarch64-linux-gnu-`）。已有配置记录的 GCC 版本为 15.2；其他版本可能影响配置、警告和产物，本文不承诺逐字节复现。
 - GNU make、patch、tar、xz、bash、coreutils（含 sha256sum、realpath）、bc、bison、flex、Python 3，以及 OpenSSL/libcrypto 和 libelf 开发文件。具体最低要求以该压缩包中的 `Documentation/process/changes.rst` 为准；如修改配置启用 BTF，还需匹配的 pahole。
@@ -43,7 +43,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 10
+test "$#" -eq 12
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -131,3 +131,9 @@ done
 仅含 p1 的 bundle 是中间产物；安装器还需要所选的完整或最小 rootfs 归档。按主仓库工具说明构建根系统并先查看 dry-run 计划。打包或离线构建成功均不等于实机运行成功；内核仓库和 bundle 构建器均不负责组装 U-Boot 的 Recovery 镜像。
 
 当前中心仓库模块列表除背光／电量计／触摸外还选择 `dby_chg.ko` 和 `dby-tfa9874.ko`，旧示例 JSON 只有三项树外映射，须补上表中的两项。编译成功不代表来源许可或硬件安全已核清。充电驱动写 PMIC 寄存器，喇叭没有保护算法，选包前先读中心仓库驱动说明。音频还需所有者提供锁定的 ADSP 固件；历史 radio／GPU／touch 配方不能复现当前完整音频系统。
+
+## R4 主机复核补充（2026-11-15）
+
+使用 0001–0012 十二个补丁及 README 的可复现环境变量。当前匹配的所有者面板、内存、触摸计划和 TFA 头文件可以复用，不代表本轮重做提取；内存 include 必须带 Venus 预留，蓝牙地址仍由所有者提供。更新后的示例 JSON 含五个树外模块映射，但占位路径和提交必须替换。
+
+可选内核测试的文件名含连字符，unittest discover 不收集；用 shell 循环逐个执行 `python3 -I -B "$test_file"`。补丁测试还要求仓库旁 `../upstream/linux-7.2.10` 的原始文件，必须从已核对的压缩包新解压测试需要的文件，不能复用旧树或拿已经打补丁的源码充当原始输入。R4 的此目录只作测试 fixture。

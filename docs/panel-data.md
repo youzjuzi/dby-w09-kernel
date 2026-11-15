@@ -34,9 +34,9 @@ python3 -B tools/extract-panel-data.py \
   --output /path/to/new-private-panel/dby-w09-panel-data.h
 ```
 
-输出父目录须已存在；工具拒绝覆盖文件，生成文件权限为 0600。它只读两个属性，不输出完整 DTB 或执行其中内容。本轮使用既有本地 DTB，提取结果与旧补丁数组逐字节一致；不是重新读取设备或实机运行验证。
+输出父目录须已存在；工具拒绝覆盖文件，生成文件权限为 0600。它只读两个属性，不输出完整 DTB 或执行其中内容。历史提取检查使用既有本地 DTB，结果与旧补丁数组逐字节一致；不是重新读取设备或实机运行验证。R4（2026-11-15）复用已有匹配头文件，不重做提取。
 
-按[构建指南](build.zh-CN.md)应用六个补丁后、运行 make 前，将头文件复制到独立内核源码树：
+按[构建指南](build.zh-CN.md)应用十二个补丁（0001–0012）后、运行 make 前，将头文件复制到独立内核源码树：
 
 ```sh
 test ! -e "$KERNEL_SOURCE/drivers/gpu/drm/panel/dby-w09-panel-data.h"
@@ -48,7 +48,7 @@ cp /path/to/new-private-panel/dby-w09-panel-data.h \
 
 ## 设备树是另一项输入
 
-从原厂 DTB 提取面板表，不会得到主线 Linux 可用的板级设备树。原厂 DTB 不能直接当作本项目 Linux DTB。公开候选不再提供反编译板级快照，现提供基于上游 include 整理的板级 DTS 和私有内存布局提取／编译配方，实机未验证，见[设备树说明](../dts/README.md)。触摸私有计划数据也不会由此工具生成。
+从原厂 DTB 提取面板表，不会得到主线 Linux 可用的板级设备树。原厂 DTB 不能直接当作本项目 Linux DTB。公开候选不再提供反编译板级快照，现提供基于上游 include 整理的板级 DTS 和私有内存布局提取／编译配方，各版本实机证据见[设备树说明](../dts/README.md)。触摸私有计划数据也不会由此工具生成。
 
 ## English summary
 

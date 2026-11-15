@@ -113,11 +113,11 @@ Two offline builds matched byte-for-byte. With reference phandles assigned only 
 
 板级 DTS 默认描述 VCI、IOVCC、VSP、VSN 四路供电，配合补丁 0011 使用；构建时不需要额外供电开关。VCI 使用 RPMh LDO11、HPM 初始模式，不设置 boot-on。IOVCC/VSP/VSN 使用三个 GPIO 控制的 fixed regulator，并设置 boot-on，使 probe 时按高电平申请 GPIO，避免在显示驱动接管前主动拉低。固定电压值只是描述，不表示 GPIO 能设定或测量电压。L14A/L5A 的既有 always-on 策略不变。
 
-boot-on 不等于 always-on：Linux 7.2.10 不为只有 boot-on 的 regulator 增加永久 use_count。面板首次 prepare 仍先 enable 各路，再 disable 到零，真实关闭 GPIO 开关、保持 100 ms 后重新上电；随后每次按完整供电顺序开关。此结论来自源码分析（O）；开机画面保留与实际时序效果仍待设备验证。
+boot-on 不等于 always-on：Linux 7.2.10 不为只有 boot-on 的 regulator 增加永久 use_count。面板首次 prepare 仍先 enable 各路，再 disable 到零，真实关闭 GPIO 开关、保持 100 ms 后重新上电；随后每次按完整供电顺序开关。此结论来自源码分析（O）；维护者记录 DP3（2026-11-15，单机 H + R）开机文字可见、PLL lock failed 消失、隔至少 3 s 开关屏六轮正常；快速连按条纹仍在。R4 重建的新卡首启与长期表现仍待验证。
 
 The board DTS describes all four panel supplies by default, with patch 0011. VCI uses RPMh LDO11 in HPM without boot-on. The three GPIO-controlled fixed regulators use boot-on to request high GPIO levels at probe. They are not always-on: the first panel prepare still acquires and releases their enable references, switches them off, waits 100 ms and powers them on again. This is an offline source analysis, not hardware validation. Voltage properties describe the rails; GPIOs do not program or measure their voltage.
 
-## GPIO vibrator (offline candidate)
+## GPIO vibrator
 
 The board selects the upstream `gpio-vibrator` driver (`CONFIG_INPUT_GPIO_VIBRA=m`)
 on TLMM GPIO72, active high, with GPIO function, 2 mA drive and a default
@@ -126,6 +126,8 @@ The owner-supplied runtime tree has pull-down in its default state and pull-up
 in its active state. This implementation uses the default state; the upstream
 driver requests a low output and controls the level through FF_RUMBLE.
 No supply is described, so the upstream regulator core supplies its dummy
-regulator. Actual motor operation remains unverified (U).
+regulator. The maintainer recorded three 300 ms pulses on one tablet on 2026-11-15 (H + R, VR1). R4 new-card operation remains Pending; this short record does not establish long-term reliability.
 
 Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
+
+R4 (2026-11-15) reuses the existing owner memory include and Bluetooth address without repeating extraction. The freshly compiled DTB matches the previous card bundle byte for byte (O); this does not promote the new-card boot to H.

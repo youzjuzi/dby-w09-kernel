@@ -1,8 +1,10 @@
 # dby-w09-kernel
 
-Current source scope: ten patches plus board integration. Device evidence is limited to one tablet; audio, charging, power-key/cover and Venus results and unresolved defects are in the [hub status](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). An unlocked bootloader and replacement Recovery are required; an incorrect image can leave the device unbootable. **The installation workflow has not been independently validated by a third party starting from a blank card. Feedback is welcome.**
+R4 (2026-11-15): see the [fresh rebuild and separate 16 GB card checklist](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md). Existing private inputs are reused; extraction is not repeated. New-card installation/first boot are Pending; third-party reproduction remains unverified. Preserve the working card for rollback and retain the existing Recovery/U-Boot without rebuilding or reflashing.
 
-Ten patches, configuration and board source for Linux 7.2.10 on the Huawei MatePad 11 (DBY-W09, Snapdragon 865 / SM8250). Full upstream sources and owner-specific data are supplied separately.
+Current source scope: twelve patches plus board integration. Device evidence is limited to one tablet; audio, charging, power-key/cover and Venus results and unresolved defects are in the [hub status](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). An unlocked bootloader and replacement Recovery are required; an incorrect image can leave the device unbootable. **The installation workflow has not been independently validated by a third party starting from a blank card. Feedback is welcome.**
+
+Twelve patches, configuration and board source for Linux 7.2.10 on the Huawei MatePad 11 (DBY-W09, Snapdragon 865 / SM8250). Full upstream sources and owner-specific data are supplied separately.
 
 [简体中文](README.zh-CN.md) · [Project hub](https://github.com/youzjuzi/dby-w09-linux) · [U-Boot](https://github.com/youzjuzi/dby-w09-uboot) · [Install and device checks](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.md)
 
@@ -10,7 +12,7 @@ Ten patches, configuration and board source for Linux 7.2.10 on the Huawei MateP
 
 **O, historical six-patch baseline**: six patches replay with fuzz=0; Image/modules and the standalone DTB were built from pinned sources. The comment cleanup reproduced the DTB hash with 36 dtc warnings, without dt-schema acceptance. **H**, 2026-11-02: the rebuilt kernel/DTB/module combination booted minimal and full desktop cards on one unlocked DBY-W09/HarmonyOS 4.2.0.213. Display/network records and **R** desktop observations are detailed in the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md).
 
-Touch passed a short rebuilt-baseline device/interaction check with guard=0 (**H + R**, 2026-11-02); see the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). Current three-finger gestures, stylus, touch startup/long-term reliability, suspend and long-term stability and other devices/firmware remain **U**. Historical earlier-project results do not validate those items here. Intermittent black screen remains unresolved. Patches are device-specific development work, not ready for general upstream use.
+Touch passed a short rebuilt-baseline device/interaction check with guard=0 (**H + R**, 2026-11-02); see the hub's [status page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). Current three-finger gestures, stylus, touch startup/long-term reliability, suspend and long-term stability and other devices/firmware remain **U**. Historical earlier-project results do not validate those items here. DP3 improved normal-paced screen cycling on one tablet (2026-11-15, maintainer H + R record); rapid-toggle stripes and long-term reliability remain unresolved. Patches are device-specific development work, not ready for general upstream use.
 
 Bluetooth on one tablet (2026-11-03): with an owner-supplied DTB controller identity, the controller is UP and visible to BlueZ/GNOME (**H + R**); one Bluetooth mouse paired and worked (**R**). Reconnection after reboot/sleep, other device types and A2DP remain **U**. See the hub status page linked above.
 
@@ -42,7 +44,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 10
+test "$#" -eq 12
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -59,7 +61,7 @@ The archive is pinned to SHA-256 `2feaa70453e91f541be6a5c9078d8168e081af45a3d971
 
 ## Recorded outputs (O)
 
-These are the historical six-patch baseline hashes, not expected hashes for the current ten-patch configuration, audio, Hall/timer or Venus board additions.
+These are the historical six-patch baseline hashes, not expected hashes for the current twelve-patch configuration, audio, Hall/timer or Venus board additions.
 
 | Output | SHA-256 |
 |---|---|

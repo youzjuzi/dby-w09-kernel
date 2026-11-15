@@ -1,8 +1,10 @@
 # dby-w09-kernel
 
-当前源码含十个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
+R4（2026-11-15）：见[从零重建与另一张 16 GB 新卡清单](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md)。已有私有输入复用，提取不重做；新卡安装／首启 Pending，第三方独立复现仍未验证。保留现用卡作回退，现有 Recovery/U-Boot 不重编、不重刷。
 
-在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的十个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
+当前源码含十二个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
+
+在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的十二个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
 
 [English](README.md) · [项目中心](https://github.com/youzjuzi/dby-w09-linux) · [U-Boot](https://github.com/youzjuzi/dby-w09-uboot) · [安装与上机检查](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md)
 
@@ -10,7 +12,7 @@
 
 **O 离线，历史六补丁基线**：六补丁 fuzz=0 应用，锁定来源构建了 Image／模块及独立 DTB。注释整理后 DTB 哈希仍一致，有 36 条 dtc 警告，未通过 dt-schema 验收。**H 实机记录**：2026-11-02，一台已解锁、HarmonyOS 4.2.0.213 的 DBY-W09 用重建后的内核／DTB／模块启动了最小和完整桌面卡。显示、网络与 **R 用户桌面观察**详见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。
 
-新基线触摸已于 2026-11-02 在 guard=0 下通过短时设备／交互检查（**H + R**），见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。本次三指手势、笔、触摸启动／长期可靠性、休眠与长时间稳定性及其他设备／固件仍为 **U 未验证**。旧工程历史不能替代这些项目的本次验收，偶发黑屏仍未解决。补丁是设备专用开发修改，未按通用上游方案准备。
+新基线触摸已于 2026-11-02 在 guard=0 下通过短时设备／交互检查（**H + R**），见中心仓库[状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。本次三指手势、笔、触摸启动／长期可靠性、休眠与长时间稳定性及其他设备／固件仍为 **U 未验证**。旧工程历史不能替代这些项目的本次验收，DP3 后正常节奏开关屏改善（2026-11-15，维护者 H + R 记录）；快速连按条纹与长期可靠性仍未解决。补丁是设备专用开发修改，未按通用上游方案准备。
 
 蓝牙（2026-11-03，一台平板）：DTB 带所有者提供的控制器身份配置时，控制器 UP、BlueZ／GNOME 可见（**H + R**）；一只蓝牙鼠标配对并可用（**R**）。重启／休眠后回连、其他设备类型、A2DP 仍为 **U**。证据见上方中心仓库状态页。
 
@@ -42,7 +44,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 10
+test "$#" -eq 12
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done

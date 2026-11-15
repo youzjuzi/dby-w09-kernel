@@ -40,7 +40,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 10
+test "$#" -eq 12
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -57,7 +57,7 @@ Patches apply in filename order with zero fuzz. Review changes made by `olddefco
 
 ## 3. Expected outputs
 
-These are expected after a successful build; they were not produced during this documentation task.
+These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
 
 | File under `$KERNEL_BUILD` | Purpose |
 |---|---|
@@ -127,4 +127,10 @@ The builder invokes `modules_install`, checks exact module vermagic, and validat
 
 A p1-only bundle is an intermediate output. The installer also requires the selected full or minimal rootfs archive; follow the hub tool documentation for rootfs construction and dry-run plans. Packaging or an offline build alone does not establish device operation. Neither the kernel repository nor the bundle builder assembles the U-Boot Recovery image.
 
-The current hub module list selects `dby_chg.ko` and `dby-tfa9874.ko` as well as backlight/gauge/touch. Add the two new external mappings above; the older example JSON supplies only three external mappings. A successful compile is not a source-clearance or hardware-safety result. The charger writes PMIC registers; the speakers have no protection algorithm. Read the hub driver notes before selecting a bundle. Audio also needs owner-supplied locked ADSP firmware; the historical radio/GPU/touch-only recipe does not reproduce the current audio system.
+The current hub module list selects `dby_chg.ko` and `dby-tfa9874.ko` as well as backlight/gauge/touch. Add the two new external mappings above; the example JSON includes all five external mappings but still requires actual paths. A successful compile is not a source-clearance or hardware-safety result. The charger writes PMIC registers; the speakers have no protection algorithm. Read the hub driver notes before selecting a bundle. Audio also needs owner-supplied locked ADSP firmware; the historical radio/GPU/touch-only recipe does not reproduce the current audio system.
+
+## R4 host recheck notes (2026-11-15)
+
+R4 uses twelve patches and the public README reproducibility environment (`SOURCE_DATE_EPOCH=1791417600 KBUILD_BUILD_USER=builder KBUILD_BUILD_HOST=offline`). Existing owner panel, memory, touch-plan and TFA headers can be reused if they match the current recipe; this does not repeat or validate extraction. The current memory include must carry the Venus reservation. Use an owner Bluetooth address when reproducing the configured controller.
+
+Optional repository tests use hyphenated filenames and are run individually with `for test_file in tests/test-*.py; do python3 -I -B "$test_file" || exit; done`; unittest discovery does not collect them. The patch tests expect a pristine `../upstream/linux-7.2.10` beside this checkout. Prepare that test fixture freshly from the same checked archive, not from the already-patched build tree or an old source tree. R4 extracted only the upstream source/header/binding files read by those tests; this fixture is not a second build input.
