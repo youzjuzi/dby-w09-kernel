@@ -129,18 +129,3 @@ No supply is described, so the upstream regulator core supplies its dummy
 regulator. Actual motor operation remains unverified (U).
 
 Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
-
-## Shared RTC offset (offline candidate)
-
-PM8150 `nvram@b100` exposes only the declared `rtc-offset@bc` cell (four
-little-endian bytes) to the RTC driver. The provider starts with DT `read-only`;
-`rtc@6000` retains `qcom,no-alarm` and has no `allow-set-time`, so setting time
-updates the offset instead of the hardware counter. Linux 7.2.10 calls HCTOSYS
-when rtc0 registers, including module probes. The hub's RTC gate waits up to
-600 seconds for clock synchronization and permits writeback only when rtc0 and
-the synchronized system clock differ by at most 600 seconds. `force_ro` controls
-the whole provider, not a per-cell access boundary; the only declared consumer
-is the RTC offset, and the gate never writes raw NVMEM. Hardware offset semantics
-and cross-OS time retention remain unverified (U).
-
-Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
