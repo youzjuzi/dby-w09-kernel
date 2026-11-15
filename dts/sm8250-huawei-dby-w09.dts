@@ -56,6 +56,15 @@
 	};
 };
 / {
+	battery: battery {
+		compatible = "simple-battery";
+		device-chemistry = "lithium-ion-polymer";
+		charge-full-design-microamp-hours = <7150000>;
+		/* Estimate: 7150 mAh * 3.87 V; nominal voltage unverified. */
+		energy-full-design-microwatt-hours = <27670500>;
+		voltage-max-design-microvolt = <4400000>;
+	};
+
 	/* Idea from CoWave-Fall's linux-on-arm-matepad11;
 	 * reimplemented, no code copied.
 	 */
@@ -596,6 +605,9 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 		battery@4000 {
 			compatible = "dby,pm8150b-fg-readonly";
 			reg = <0x4000>, <0x4100>;
+			monitored-battery = <&battery>;
+			interrupts = <0x2 0x40 0x3 IRQ_TYPE_EDGE_RISING>;
+			interrupt-names = "msoc-delta";
 		};
 	};
 };

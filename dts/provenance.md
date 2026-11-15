@@ -52,3 +52,16 @@ The charger retains its own health and write gates. The two LPG
 `linux,default-trigger` properties select project simple LED triggers;
 no additional PMIC peripherals are enabled. On one tablet (2026-11-15, H) the
 three IRQs registered and only their enable bits were set.
+
+
+The FG `msoc-delta` tuple (USID 2, block 0x40, bit 3, rising edge) comes from
+the owner stock runtime-FDT `qcom,fg-batt-soc@4000` node. The linked
+`simple-battery` declares lithium-ion-polymer chemistry, design charge 7150 mAh
+and maximum design voltage 4.4 V, using the task's stock battery-profile evidence
+(DesayAtl and SunwodaCosmx have the same capacity/voltage). Design energy
+27670500 uWh is explicitly **estimated** as 7150 mAh × 3.87 V; the nominal
+3.87 V is not supplied by that FDT and remains unverified. No temperature,
+resistance, OCV table or FG SRAM programming is added. The Linux 7.2.10
+power-supply core supplies these design properties from `monitored-battery`.
+This integration has offline evidence only (O); IRQ cadence and userspace
+properties still require device validation.
