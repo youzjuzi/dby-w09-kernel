@@ -4,6 +4,8 @@ Subject: [PATCH] drm/msm/dsi: power the digital domain with PLL bias
 Set DIGTOP_PWRDN_B together with PLL_SHUTDOWNB when enabling PLL bias.
 Clear both when the last bias reference is released.
 
+Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
+
 --- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
 +++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
 @@ -413,7 +413,8 @@

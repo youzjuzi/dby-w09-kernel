@@ -2,8 +2,11 @@ From: DBY-W09 contributors <contributors@users.noreply.github.com>
 Subject: [PATCH] drm/panel: nt36523: sequence optional panel supplies
 
 Keep legacy DT power calls unchanged. Additional supplies opt into an
-ordered power sequence and one initial power cycle. Hardware validation
-is pending; the minimum off time is an experimental assumption.
+ordered power sequence and one initial power cycle. Tested on one
+device; the 100 ms minimum off time is taken from the reference, not
+measured.
+
+Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
 
 --- a/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
 +++ b/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
