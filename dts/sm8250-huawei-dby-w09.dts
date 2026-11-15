@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only AND BSD-3-Clause
 /* Project board layers, reorganised for standalone use; see provenance.md.
- * PM8150B IRQ declaration: Copyright (c) 2017-2019, The Linux Foundation.
+ * PM8150B IRQ and PM8150L parent/LPG declarations: Copyright (c) 2017-2019, The Linux Foundation.
  * Copyright (c) 2019, Linaro Limited. See NOTICE and LICENSES/.
  */
 /* Project board baseline. See provenance.md. */
@@ -8,6 +8,51 @@
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include "sm8250.dtsi"
 #include "pm8150.dtsi"
+#include <dt-bindings/leds/common.h>
+
+/* Minimal PM8150L nodes from upstream pm8150l.dtsi. The owner-supplied
+ * runtime FDT places the indicator on USID 5: PWM 0/red, PWM 1/green.
+ * LPG LED reg is one-based. Stock brightness ratios are 70/255 and 120/255;
+ * userspace applies those ratios to the independent LED class devices.
+ */
+&spmi_bus {
+	/* Revision information only; required by the USID 5 parent driver. */
+	pmic@4 {
+		compatible = "qcom,pm8150l", "qcom,spmi-pmic";
+		reg = <0x4 SPMI_USID>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+
+	pmic@5 {
+		compatible = "qcom,pm8150l", "qcom,spmi-pmic";
+		reg = <0x5 SPMI_USID>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pwm {
+			compatible = "qcom,pm8150l-lpg";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			#pwm-cells = <2>;
+			status = "okay";
+
+			led@1 {
+				reg = <1>;
+				color = <LED_COLOR_ID_RED>;
+				function = LED_FUNCTION_CHARGING;
+				default-state = "off";
+			};
+
+			led@2 {
+				reg = <2>;
+				color = <LED_COLOR_ID_GREEN>;
+				function = LED_FUNCTION_CHARGING;
+				default-state = "off";
+			};
+		};
+	};
+};
 / {
 	/* Idea from CoWave-Fall's linux-on-arm-matepad11;
 	 * reimplemented, no code copied.

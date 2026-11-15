@@ -16,7 +16,7 @@ This file describes the reconstructed board source introduced after the decompil
 
 The project source layers had accumulated over multiple experiments. The new file combines them in the same order, removes internal include paths and the Bluetooth identity property, and removes the old experiment number from model text. The GPU reservation label is now emitted by the private generator. USB phandle literals are replaced by label references. Historical overrides remain visible rather than being represented as a newly upstreamed minimal design.
 
-Upstream input: Linux 7.2.10 archive SHA-256 `2feaa70453e91f541be6a5c9078d8168e081af45a3d9718054850538cff2ebf3`. The 31 include paths and their content hashes are in upstream-sha256.json; all were checked against the archive. They remain external kernel files with their own notices. The PM8150B interrupt declaration in the project USB delta was taken from upstream pm8150b.dtsi; its Linux Foundation/Linaro BSD-3-Clause notice is retained in the board file and NOTICE. Existing attribution records are retained, and project modifications use GPL-2.0-only. This is not a claim that every inherited hardware description is original project work.
+Upstream input: Linux 7.2.10 archive SHA-256 `2feaa70453e91f541be6a5c9078d8168e081af45a3d9718054850538cff2ebf3`. The 32 include paths and their content hashes are in upstream-sha256.json; all were checked against the archive. They remain external kernel files with their own notices. The PM8150B interrupt declaration in the project USB delta was taken from upstream pm8150b.dtsi; its Linux Foundation/Linaro BSD-3-Clause notice is retained in the board file and NOTICE. Existing attribution records are retained, and project modifications use GPL-2.0-only. This is not a claim that every inherited hardware description is original project work.
 
 The memory generator follows the project's owner-FDT extraction recipe: copy only RAM/reserved reg and no-map properties from owner runtime FDT, assign standard cmd-db/SMEM roles, retain the deliberate splash no-map policy and construct the known framebuffer description. No private memory include is distributed. A pinned layout fingerprint limits use to the inspected baseline; this is an offline check, not a hardware safety certificate or a grant to redistribute input data.
 
@@ -27,3 +27,16 @@ The old snapshot's incomplete provenance is not used as the source for this reco
 Later project layers add ADSP/ASoC capture and Primary TDM speaker routing, the PM8150B charger binding, Hall GPIO113/121/23 and PM8150L LDO8 at 1.8 V, the existing MMIO timer at `timer@17c20000`, and the video reservation label. The Hall GPIO/supply description was checked against owner stock runtime-FDT evidence and accessory observations; no owner FDT snapshot is included. The memory extractor adds a label to the video reservation, while the generated memory include remains private. These edits keep existing upstream attribution and the board file's combined licence expression. They do not establish rights to redistribute omitted inputs. Single-tablet behavior is documented separately in the hub status; suspend remains U.
 
 后续项目层增加 ADSP／ASoC 录音与 Primary TDM 放音、PM8150B 充电节点、三路霍尔与 1.8 V LDO8、MMIO 定时器及视频保留区标签。霍尔 GPIO／供电经所有者原厂运行时 FDT 和配件观察核对，不分发原厂快照；生成的内存 include 仍为私有。保留已有上游署名和组合许可，不据此授权原输入。单机行为证据另见中心状态页，休眠仍为 U。
+
+The charging indicator uses minimal PM8150L parent/LPG declarations from upstream
+`pm8150l.dtsi`, retaining the Linux Foundation/Linaro notice in the board source.
+The empty USID 4 node supplies read-only revision information; only USID 5 hosts
+the LPG. Owner runtime-FDT wiring maps PWM 0/red and PWM 1/green to upstream LED
+reg 1/2. Stock brightness ratios 70/255 and 120/255 are applied by userspace.
+No blue, flash, WLED or other PM8150L child is enabled. This is offline evidence;
+indicator colors and shutdown behavior await device validation.
+
+充电指示灯采用上游 PM8150L 最小父节点与 LPG 声明，保留原署名。USID 4
+仅供读取版本，USID 5 承载红绿灯；原厂运行时 FDT 的 PWM 0/1 对应上游
+LED reg 1/2，亮度比例为 70/255、120/255。未启用蓝灯、闪光灯、WLED
+及其它子设备。当前仅为离线证据，颜色和关机灭灯待实机。

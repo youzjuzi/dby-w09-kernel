@@ -17,6 +17,7 @@
   "include/dt-bindings/interconnect/qcom,sm8250.h": "cb00fd45ec40cdc25a05f25ee1bc18582c3d72869df2fb2e20459a0af3e6e846",
   "include/dt-bindings/interrupt-controller/arm-gic.h": "80dc56e8aa61b3681ee42fb0bfd34bf35ea2578ac6d82f1fa972b963667e8ff7",
   "include/dt-bindings/interrupt-controller/irq.h": "392400a309a54ea5b1a2ac2e52773d3ab68e07323109b9aed88a69fedc74e082",
+  "include/dt-bindings/leds/common.h": "7bb837c9ecda0e57f3ed0ca64e7ade99d9e8a12d947e1971887a163f5edd0977",
   "include/dt-bindings/mailbox/qcom-ipcc.h": "e49a0b0731c1a56fea0ad82863e1daa905fad71c5d5780c11976f097d485b677",
   "include/dt-bindings/phy/phy-qcom-qmp.h": "98993f931712dae608075c60149f7fec21405dda335bae06dcf3f448598bb995",
   "include/dt-bindings/phy/phy.h": "1bd66286362f02487d3b5eeefb4be3221b949b1eecbfc4ca717fbbbe5e8a61be",
