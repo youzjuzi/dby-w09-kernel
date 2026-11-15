@@ -1,6 +1,6 @@
 # dby-w09-kernel
 
-R4（2026-11-15）：见[从零重建与另一张 16 GB 新卡清单](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md)。已有私有输入复用，提取不重做；新卡安装／首启 Pending，第三方独立复现仍未验证。保留现用卡作回退，现有 Recovery/U-Boot 不重编、不重刷。
+R4（2026-11-15）：维护者从空白 **16 GB 新卡**照公开文档全新安装通过，包 **`20261115-1`**（**H + R**：用户提供的 Claude SSH 核对与用户交互观察）。见[新卡结果与操作清单](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md)。第三方独立复现仍为 **U**；已有私有输入复用，提取未重做、保持原证据级别。现有 Recovery/U-Boot 未重编、未重刷；原工作卡保留作回退。
 
 当前源码含十二个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
 
