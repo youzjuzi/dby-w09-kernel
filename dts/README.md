@@ -116,3 +116,16 @@ Two offline builds matched byte-for-byte. With reference phandles assigned only 
 boot-on 不等于 always-on：Linux 7.2.10 不为只有 boot-on 的 regulator 增加永久 use_count。面板首次 prepare 仍先 enable 各路，再 disable 到零，真实关闭 GPIO 开关、保持 100 ms 后重新上电；随后每次按完整供电顺序开关。此结论来自源码分析（O）；开机画面保留与实际时序效果仍待设备验证。
 
 The board DTS describes all four panel supplies by default, with patch 0011. VCI uses RPMh LDO11 in HPM without boot-on. The three GPIO-controlled fixed regulators use boot-on to request high GPIO levels at probe. They are not always-on: the first panel prepare still acquires and releases their enable references, switches them off, waits 100 ms and powers them on again. This is an offline source analysis, not hardware validation. Voltage properties describe the rails; GPIOs do not program or measure their voltage.
+
+## GPIO vibrator (offline candidate)
+
+The board selects the upstream `gpio-vibrator` driver (`CONFIG_INPUT_GPIO_VIBRA=m`)
+on TLMM GPIO72, active high, with GPIO function, 2 mA drive and a default
+pull-down/output-low state. No other consumer uses GPIO72 in the baseline DTB.
+The owner-supplied runtime tree has pull-down in its default state and pull-up
+in its active state. This implementation uses the default state; the upstream
+driver requests a low output and controls the level through FF_RUMBLE.
+No supply is described, so the upstream regulator core supplies its dummy
+regulator. Actual motor operation remains unverified (U).
+
+Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.

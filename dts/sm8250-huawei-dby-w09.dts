@@ -8,6 +8,28 @@
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include "sm8250.dtsi"
 #include "pm8150.dtsi"
+/ {
+	/* Idea from CoWave-Fall's linux-on-arm-matepad11;
+	 * reimplemented, no code copied.
+	 */
+	vibrator {
+		compatible = "gpio-vibrator";
+		enable-gpios = <&tlmm 72 GPIO_ACTIVE_HIGH>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vibrator_default>;
+	};
+};
+
+&tlmm {
+	vibrator_default: vibrator-default-state {
+		pins = "gpio72";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+		output-low;
+	};
+};
+
 / { model="Huawei DBY-W09"; compatible="huawei,dby-w09", "qcom,sm8250"; /delete-node/ reserved-memory; /delete-node/ memory@80000000; aliases { mmc0=&sdhc_2; serial1=&uart6; };
  display-hold {
   compatible = "huawei,dby-w09-display-hold";
