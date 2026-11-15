@@ -340,7 +340,30 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 &pm8150_temp { status = "disabled"; };
 &pm8150_adc { status = "disabled"; };
 &pm8150_adc_tm { status = "disabled"; };
-&{/soc@0/spmi@c440000/pmic@0/rtc@6000} { qcom,no-alarm; };
+/* Idea from CoWave-Fall's linux-on-arm-matepad11;
+ * reimplemented, no code copied. The userspace gate validates the time
+ * before allowing the RTC driver to persist this four-byte offset.
+ */
+&pm8150_0 {
+	nvram@b100 {
+		compatible = "qcom,spmi-sdam";
+		reg = <0xb100>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0xb100 0x100>;
+		read-only;
+
+		rtc_offset: rtc-offset@bc {
+			reg = <0xbc 0x4>;
+		};
+	};
+};
+
+&{/soc@0/spmi@c440000/pmic@0/rtc@6000} {
+	qcom,no-alarm;
+	nvmem-cells = <&rtc_offset>;
+	nvmem-cell-names = "offset";
+};
 &{/thermal-zones/pm8150-thermal} { status = "disabled"; };
 
 &pm8150_gpios {
