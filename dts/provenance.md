@@ -50,5 +50,5 @@ The charger IRQ tuples come from owner stock runtime-FDT `qpnp-smb5` nodes:
 provided the API/handling pattern; its PMIC support is not claimed for PM8150B.
 The charger retains its own health and write gates. The two LPG
 `linux,default-trigger` properties select project simple LED triggers;
-no additional PMIC peripherals are enabled. IRQ and kernel-trigger changes
-have offline evidence only (O); device behavior remains to be validated.
+no additional PMIC peripherals are enabled. On one tablet (2026-11-15, H) the
+three IRQs registered and only their enable bits were set.
