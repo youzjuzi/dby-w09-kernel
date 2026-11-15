@@ -33,10 +33,10 @@ The charging indicator uses minimal PM8150L parent/LPG declarations from upstrea
 The empty USID 4 node supplies read-only revision information; only USID 5 hosts
 the LPG. Owner runtime-FDT wiring maps PWM 0/red and PWM 1/green to upstream LED
 reg 1/2. Stock brightness ratios 70/255 and 120/255 are applied by userspace.
-No blue, flash, WLED or other PM8150L child is enabled. This is offline evidence;
-indicator colors and shutdown behavior await device validation.
+No blue, flash, WLED or other PM8150L child is enabled. On one tablet (2026-11-15,
+H + R) the red/green channels and the shutdown turn-off were confirmed.
 
 充电指示灯采用上游 PM8150L 最小父节点与 LPG 声明，保留原署名。USID 4
 仅供读取版本，USID 5 承载红绿灯；原厂运行时 FDT 的 PWM 0/1 对应上游
 LED reg 1/2，亮度比例为 70/255、120/255。未启用蓝灯、闪光灯、WLED
-及其它子设备。当前仅为离线证据，颜色和关机灭灯待实机。
+及其它子设备。2026-11-15 一台平板实机确认红绿通道与关机灭灯(H + R)。
