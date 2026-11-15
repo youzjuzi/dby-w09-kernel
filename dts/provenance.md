@@ -79,3 +79,14 @@ On one tablet (2026-11-16, H) a Lenovo PD charger negotiated fixed 9 V/1.5 A
 and charged with the driver's input-current control; a 3 A Rp charger, unplug,
 PC port and OTG behaved as expected. Regular dtc handle numbering is used; numeric
 phandle changes are not functional wiring changes.
+
+
+The 2026-11-16 offline power-ramp candidate raises only the fixed 9 V sink PDO
+to 3 A and operating sink power to 27 W, using the supplied observation that
+the Lenovo source offers 9 V/3 A. This is an upper contract declaration, not a
+verified operating point or a changed default: dby-chg defaults to 1.5 A and
+bounds current by its selected ceiling and software thermal cap. The 5 V/2 A
+PDO, source PDO and roles are unchanged. The additional charger IIO consumer
+channel names the upstream PM8150B `ADC5_CHG_TEMP` provider, whose processed
+temperature is in millicelsius. No new ADC channel definition, thermal-source
+register programming or higher-power hardware validation is claimed.
