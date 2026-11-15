@@ -67,3 +67,14 @@ On one tablet (2026-11-15, H) the IRQ registered with only its enable bit set
 and the four design properties appeared in sysfs; the IRQ fired about every
 60–130 s while discharging but not in step with displayed `capacity` changes,
 so it is kept only as an extra notification.
+
+
+The fixed sink PDOs 5 V / 2 A and 9 V / 1.5 A follow the owner stock FDT
+`qcom,default-sink-caps` values (5000 2000 9000 1500); operating sink power is
+13.5 W. Existing PDO flags, source PDOs and role settings are retained. The
+charger `power-supplies` reference names the upstream Type-C node so standard
+power-supply registration deferral and `external_power_changed` notifications
+can be used. No new voltage-override or PD-PHY register programming is included.
+These are offline candidate declarations (O), not evidence of a negotiated 9 V
+contract or working 9 V charging. Regular dtc handle numbering is used; numeric
+phandle changes are not functional wiring changes.
