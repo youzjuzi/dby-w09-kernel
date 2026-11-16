@@ -68,7 +68,7 @@ locked to Primary TDM0 and played desktop audio with no clock, TDM or clip flags
 and four-channel capture kept working. Desktop loudness depends on the Linux
 package's WirePlumber S16LE rule; this kernel tree is unchanged by that rule.
 
-## 0013: GPIO alarm IRQ recovery (O, hardware Pending)
+## 0013: GPIO alarm IRQ recovery (O; device results H + R, 2026-11-16)
 
 Patch 0013 extends the binding in the new patch, leaving 0001 unchanged.
 Optional `esd-gpios` allows one or two alarm inputs, normal low; this recovery
@@ -104,8 +104,19 @@ software tests and compilation cannot validate them. The minimum-off experiment
 is not part of this series. See the hub's display recovery instructions before
 manually starting the retained Python watchdog.
 
+Device results (one tablet, one card, bundles `20261116-11`/`-12`; H = kernel log
+read by the maintainer, R = user observation): about 450 alarm edges from normal
+and rapid screen off/on produced no false reset. Four real both-high events were
+seen; each reset completed with `ret=0` in one attempt and the alarms returned low.
+Three of them happened shortly after a screen wake (including GNOME switching to
+60 Hz at login): the picture returned by itself 1.6–1.9 s after the panel was
+enabled, versus 5–6 s with the old userspace watchdog. **Known limitation:** one
+event occurred while the screen was on and idle; after the reset the screen stayed
+black until the user touched it, with no further kernel display activity (cause
+not identified, U). Failure rates and long-term behavior are not established.
 
-## 0014: selectable 30/60/120 Hz modes (O, hardware Pending)
+
+## 0014: selectable 30/60/120 Hz modes (O; device results H + R, 2026-11-16)
 
 The DBY-W09 panel now exposes three DRM modes with the same 584849 kHz pixel
 clock, horizontal timing, four-line VSYNC and 237-line VBP. VFP is 8507/2853/26
@@ -146,6 +157,14 @@ The mode lookup/insertion approach was compared read-only with
 [CoWave-Fall's panel patch at 6a77acb](https://github.com/CoWave-Fall/linux-on-arm-matepad11/blob/6a77acb2824198ff521e408b83585c32190315f3/kernel/patches/0006-drm-panel-nt36523-add-dby-w09.patch).
 That reference describes another panel variant and is not our command-table
 source; no code or initialization arrays were copied from it.
+
+Device results (bundle `20261116-12`, H + R): GNOME Settings lists 30/60/120 Hz;
+switching 120 → 60 → 30 → 120 logged `0x23=0x0c/0x0e/0x0d` with matching vtotal
+5654/11308/2827, and the user saw no tearing, stripes or flicker. Screen off/on
+(7 times at 30 Hz, 5 at 120 Hz) kept the selected rate; a 60 Hz choice persisted
+across reboot (the kernel boots at 120 Hz, then GNOME applies 60 Hz). ESD resets
+reapplied the current rate. Whether 60 Hz shows more black screens than 120 Hz
+is not established (user impression R; small sample).
 
 Offline tests execute the replayed mode enumeration, parameter policy and
 transfer functions with synthetic panel data, together with upstream vrefresh.

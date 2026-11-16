@@ -125,4 +125,5 @@ The owner stock DT's `lcd_kit_debussy_290_20d_10p9_qcom` node declares
 and normal value 0. Only those public wiring facts are carried over. No pinctrl
 or bias override is added; inherited bias is retained. Both-high plus a 1000 ms
 IRQ debounce follows the previous watchdog and reported enable transients;
-IRQ-based recovery is an offline candidate, not hardware-validated.
+IRQ-based recovery was exercised on one tablet on 2026-11-16 (H + R): no false
+resets in about 450 alarm edges, four successful resets; see `docs/patch-notes.md`.
