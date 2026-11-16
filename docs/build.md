@@ -59,6 +59,8 @@ OSM L3 interconnect is built in (`CONFIG_INTERCONNECT_QCOM_OSM_L3=y`): the built
 
 The saved configuration also records `PCI_PWRCTRL_PWRSEQ=m`, as already produced by `olddefconfig` in the preceding build; this normalization does not change that build's effective PCI power-control configuration.
 
+QRTR, its SMD transport and the protection-domain mapper are also built in, together with the QMI helpers and PDR message definitions selected by the mapper. Remoteproc creates the mapper's auxiliary device just before starting ADSP (`drivers/remoteproc/qcom_common.c`); a loadable mapper relies on asynchronous udev loading at that point. Built-in drivers can bind synchronously when the auxiliary device or IPCRTR channel appears. The preceding OSM L3 candidate had one boot with no ADSP services and one successful boot (H); the QRTR registration-to-ADSP-ready interval was below 1 ms in the failure and 10.7 ms in the success. A late mapper/QRTR is a hypothesis (U), not a proven cause. Probe errors and asynchronous message handling remain possible; the new configuration and its Wi-Fi/audio behavior need device validation (U). QRTR MHI/TUN, PDR helpers, GLINK SMEM and the ADSP PAS driver remain modules.
+
 ## 3. Expected outputs
 
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
