@@ -92,3 +92,28 @@ PDO, source PDO and roles are unchanged. The additional charger IIO consumer
 channel names the upstream PM8150B `ADC5_CHG_TEMP` provider, whose processed
 temperature is in millicelsius. No new ADC channel definition, thermal-source
 register programming or higher-power hardware validation is claimed.
+
+
+The 2026-11-16 USB SuperSpeed DTS candidate follows Linux 7.2.10
+`qrb5165-rb5.dts` for the NB7VPQ904M on I2C15 at 0x1c and its Type-C
+orientation/retimer graph. The owner stock FDT identifies this redriver and
+the QMP PHY's L18A (0.912 V) and L9A (1.2 V) supplies. L9A reuses the
+existing `wifi_l9a` regulator; L18A is requested by the PHY without an
+always-on or boot-on constraint. The upstream driver's USB and DP default
+EQ, flat-gain, output-compression and loss-match values match the stock FDT;
+no custom redriver tuning is added. DP/SBU/FSA4480 and the secondary `usb_2`
+controller are not enabled by this change.
+
+The stock FDT omits redriver supply and enable properties; the actual power
+rail is unknown. Although `vcc-supply` is not required by the binding, the
+pinned `nb7vpq904m.c` returns `-ENODEV` from
+`devm_regulator_get_optional()` when it is absent. The binding specifies a
+1.8 V supply (RB5 uses S4A, while its example uses L15B); neither identifies
+this board's physical rail. A root-level `regulator-fixed` provider therefore
+describes an assumed externally powered 1.8 V VCC solely to satisfy the
+driver's supply lookup. It has no GPIO, input supply, delay, clock, power-domain
+or PMIC control and changes no hardware state. Always-on and boot-on describe
+that assumption; they do not establish that power is actually present.
+`enable-gpios` remains absent. No driver patch or module rebuild is involved.
+This is offline evidence only; redriver probe and I2C operation still need
+device validation.

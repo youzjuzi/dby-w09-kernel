@@ -56,6 +56,19 @@
 	};
 };
 / {
+	/* The stock DT omits redriver power control; the physical rail is unknown.
+	 * The binding specifies 1.8 V, and the driver requires a VCC provider.
+	 * This fixed description has no hardware control or upstream supply.
+	 */
+	dby_redriver_vcc: regulator-redriver-vcc {
+		compatible = "regulator-fixed";
+		regulator-name = "redriver-vcc";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
 	battery: battery {
 		compatible = "simple-battery";
 		device-chemistry = "lithium-ion-polymer";
@@ -237,6 +250,12 @@
    regulator-always-on; regulator-boot-on;
    regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
   };
+  usb_l18a: ldo18 {
+   regulator-name = "usb-l18a";
+   regulator-min-microvolt = <912000>;
+   regulator-max-microvolt = <912000>;
+   regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+  };
  };
 };
 &usb_1_hsphy {
@@ -245,17 +264,54 @@
  vdda18-supply = <&usb_l12a>;
  vdda33-supply = <&usb_l2a>;
 };
-&usb_1 { status = "okay"; qcom,select-utmi-as-pipe-clk; };
+&usb_1 { status = "okay"; };
 &usb_1_dwc3 {
- dr_mode = "peripheral";
- maximum-speed = "high-speed";
- phys = <&usb_1_hsphy>;
- phy-names = "usb2-phy";
- /delete-node/ ports;
+ dr_mode = "otg";
+ usb-role-switch;
 };
-// The deleted SS endpoint has an inbound reference in the disabled QMP PHY.
-// Delete that reference too, without enabling or changing QMP PHY operation.
-&usb_1_qmpphy_usb_ss_in { /delete-property/ remote-endpoint; };
+&usb_1_dwc3_hs_out {
+ remote-endpoint = <&dby_connector_endpoint>;
+};
+&usb_1_qmpphy {
+ status = "okay";
+ vdda-phy-supply = <&usb_l18a>;
+ vdda-pll-supply = <&wifi_l9a>;
+};
+&usb_1_qmpphy_out {
+ remote-endpoint = <&dby_redriver_phy_ss>;
+};
+
+/* USB-only RB5 graph; owner stock DT omits redriver supply/enable properties.
+ * Equalization uses the upstream NB7VPQ904M defaults. DP and SBU stay unlinked. */
+&i2c15 {
+ status = "okay";
+
+ typec-mux@1c {
+  compatible = "onnn,nb7vpq904m";
+  reg = <0x1c>;
+  vcc-supply = <&dby_redriver_vcc>;
+  retimer-switch;
+  orientation-switch;
+
+  ports {
+   #address-cells = <1>;
+   #size-cells = <0>;
+   port@0 {
+    reg = <0>;
+    dby_redriver_con_ss: endpoint {
+     remote-endpoint = <&dby_connector_ss>;
+    };
+   };
+   port@1 {
+    reg = <1>;
+    dby_redriver_phy_ss: endpoint {
+     remote-endpoint = <&usb_1_qmpphy_out>;
+     data-lanes = <0 1 2 3>;
+    };
+   };
+  };
+ };
+};
 
 // PCIe/WLAN bring-up: only PCIe0 and WLAN power sequence.
 / {
@@ -790,23 +846,15 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
                 port@0 {
                     reg = <0>;
                     dby_connector_endpoint: endpoint {
-                        remote-endpoint = <&dby_usb_endpoint>;
+                        remote-endpoint = <&usb_1_dwc3_hs_out>;
                     };
                 };
-            };
-        };
-    };
-};
-&{/soc@0/usb@a6f8800/usb@a600000} {
-    dr_mode = "otg";
-    usb-role-switch;
-    ports {
-        #address-cells = <1>;
-        #size-cells = <0>;
-        port@0 {
-            reg = <0>;
-            dby_usb_endpoint: endpoint {
-                remote-endpoint = <&dby_connector_endpoint>;
+                port@1 {
+                    reg = <1>;
+                    dby_connector_ss: endpoint {
+                        remote-endpoint = <&dby_redriver_con_ss>;
+                    };
+                };
             };
         };
     };
