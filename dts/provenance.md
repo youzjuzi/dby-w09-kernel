@@ -110,5 +110,10 @@ The connector SS endpoint now connects directly to `usb_1_qmpphy_out`, using
 the graph pattern in upstream Linux 7.2.10 `sm8350-hdk.dts` and
 `sm8450-hdk.dts`. The QMP PHY retains its orientation switch and handles cable
 orientation. No data-lanes override is added. DP/SBU/FSA4480 and the secondary
-`usb_2` controller are unchanged. Probe, both plug orientations and actual
-SuperSpeed operation still require device validation of this candidate.
+`usb_2` controller are unchanged.
+
+Device results (2026-11-16, bundle 20261116-8): no deferred devices; the Type-C
+port registers and only the QMP PHY orientation switch/mux appear; NCM gadget,
+PD 9 V and 5 V charging, and a USB 2.0 hub work in both plug orientations.
+Actual SuperSpeed (5 Gbps) link operation has not been tested yet because no
+USB 3 cable or adapter was available.
