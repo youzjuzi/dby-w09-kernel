@@ -4,6 +4,7 @@ Subject: [PATCH] drm/panel: nt36523: recover dual GPIO alarms through DRM
 Use optional alarm GPIO IRQs and one-second debounce to reset the active
 pipe via the standard bridge helper. Keep callbacks non-blocking with
 respect to recovery work; bound recovery to five attempts per 60 seconds.
+Use system_dfl_wq for delayed checks, avoiding the deprecated system_wq.
 This adaptation of the existing watchdog policy needs hardware validation.
 
 ---
@@ -98,7 +99,7 @@ This adaptation of the existing watchdog policy needs hardware validation.
 +	spin_lock_irqsave(&pinfo->esd_lock, flags);
 +	if (pinfo->esd_ready && pinfo->esd_enabled && !pinfo->esd_stopping) {
 +		pinfo->esd_deadline = jiffies + msecs_to_jiffies(ESD_DEBOUNCE_MS);
-+		mod_delayed_work(system_wq, &pinfo->esd_work,
++		mod_delayed_work(system_dfl_wq, &pinfo->esd_work,
 +				 msecs_to_jiffies(ESD_DEBOUNCE_MS));
 +	}
 +	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
@@ -120,7 +121,7 @@ This adaptation of the existing watchdog policy needs hardware validation.
 +		/* An edge while work was waiting for modeset locks restarts debounce. */
 +		now = jiffies;
 +		if (time_before(now, pinfo->esd_deadline))
-+			mod_delayed_work(system_wq, &pinfo->esd_work,
++			mod_delayed_work(system_dfl_wq, &pinfo->esd_work,
 +					 pinfo->esd_deadline - now);
 +		else
 +			pending = true;

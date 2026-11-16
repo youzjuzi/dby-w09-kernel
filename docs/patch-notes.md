@@ -78,6 +78,8 @@ failing panel probe. Partial IRQ requests and GPIO ownership are released on
 failure. No pin bias, panel power timing, DCS command or DPU/DSI change is made.
 
 Both edges restart a 1000 ms delayed check; enable also schedules one check.
+Both queueing sites use `system_dfl_wq` to avoid the deprecated workqueue warning;
+the recovery policy and callback synchronization are unchanged.
 Under DRM modeset locks, work rechecks the deadline, enabled flag, two high GPIOs
 and an active connector/CRTC. GPIO read errors never count as high. The panel
 bridge reference is balanced, with a bridge lifetime guard; reset uses upstream

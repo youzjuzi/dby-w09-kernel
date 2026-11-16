@@ -96,7 +96,7 @@ static struct gpio_desc pins[2];
 static struct gpio_descs gpios;
 static unsigned long jiffies;
 static bool esd_recovery, bridge_missing, bridge_dead, lock_edge, lock_off;
-static int system_wq, resets, calls, refs, entered, ctxs, backoffs, mode_locks;
+static int system_dfl_wq, resets, calls, refs, entered, ctxs, backoffs, mode_locks;
 static int lock_deadlocks, reset_deadlocks, reset_error, gives, woulds, done;
 static int requests, freed, gpio_puts, irq_fail, gpio_fail, warnings, monitoring;
 static void nt36523_esd_queue(struct panel_info *pinfo);
