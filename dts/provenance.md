@@ -84,8 +84,10 @@ phandle changes are not functional wiring changes.
 The 2026-11-16 offline power-ramp candidate raises only the fixed 9 V sink PDO
 to 3 A and operating sink power to 27 W, using the supplied observation that
 the Lenovo source offers 9 V/3 A. This is an upper contract declaration, not a
-verified operating point or a changed default: dby-chg defaults to 1.5 A and
-bounds current by its selected ceiling and software thermal cap. The 5 V/2 A
+operating point by itself: dby-chg bounds current by its selected ceiling
+(default 2.5 A) and software thermal cap. On one tablet (2026-11-16, H) the
+Lenovo source negotiated fixed 9 V/3 A and the driver ran 1.5–3 A input limits
+without hard resets; `chg_temp` read 41–68 C across that range. The 5 V/2 A
 PDO, source PDO and roles are unchanged. The additional charger IIO consumer
 channel names the upstream PM8150B `ADC5_CHG_TEMP` provider, whose processed
 temperature is in millicelsius. No new ADC channel definition, thermal-source
