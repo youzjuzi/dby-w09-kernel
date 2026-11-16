@@ -55,6 +55,10 @@ make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
 
 Patches apply in filename order with zero fuzz. Review changes made by `olddefconfig` and retain the resulting `.config`; toolchain differences may change it. Do not ignore patch errors or disable required features to force progress. Parallelism is omitted; add `-jN` only as appropriate for host memory.
 
+OSM L3 interconnect is built in (`CONFIG_INTERCONNECT_QCOM_OSM_L3=y`): the built-in Qualcomm CPU frequency driver needs its interconnect path (`drivers/cpufreq/qcom-cpufreq-hw.c`). A module makes CPU frequency scaling wait for udev to load it; the preceding audio-autoload candidate registered CPU performance domains 6.47–9.44 seconds into eight boots. Earlier initialization with this configuration is an offline expectation (O); boot-time and thermal effects remain pending device validation (U).
+
+The saved configuration also records `PCI_PWRCTRL_PWRSEQ=m`, as already produced by `olddefconfig` in the preceding build; this normalization does not change that build's effective PCI power-control configuration.
+
 ## 3. Expected outputs
 
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
