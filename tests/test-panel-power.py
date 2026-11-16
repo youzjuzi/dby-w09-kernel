@@ -19,7 +19,7 @@ def replay(work):
         dest = work / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(UPSTREAM / name, dest)
-    for number in ('0001', '0002', '0003', '0011', '0013'):
+    for number in ('0001', '0002', '0003', '0011', '0013', '0014'):
         patch = next((ROOT / 'patches').glob(number + '-*.patch'))
         result = subprocess.run(['patch', '--batch', '--fuzz=0', '-p1', '-d', str(work),
                                  '-i', str(patch)], capture_output=True, text=True, check=True)
@@ -233,6 +233,179 @@ int main(void) {
                                  r'\(.*?\n}', source, re.S).group()
                 self.assertNotIn('cancel_delayed_work_sync', body)
                 self.assertNotIn('flush', body)
+
+    def test_refresh_modes_and_packets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            work = Path(tmp)
+            source = replay(work)
+            def function(name, text=source):
+                return re.search(r'(?:static )?(?:int|u8|unsigned int) ' + name +
+                                 r'\(.*?\n}', text, re.S).group()
+            upstream_modes = (UPSTREAM / 'drivers/gpu/drm/drm_modes.c').read_text()
+            modes = re.search(r'static const struct drm_display_mode dby_w09_modes\[\] = .*?\n};',
+                              source, re.S).group()
+            desc = re.search(r'static const struct panel_desc dby_w09_desc = .*?\n};',
+                             source, re.S).group()
+            self.assertIn('.modes = dby_w09_modes,', desc)
+            self.assertIn('.num_modes = ARRAY_SIZE(dby_w09_modes),', desc)
+            harness = r'''
+#include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+typedef uint8_t u8;
+typedef uint16_t u16;
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
+#define DRM_MODE_FLAG_INTERLACE 1
+#define DRM_MODE_FLAG_DBLSCAN 2
+#define DRM_MODE_TYPE_DRIVER 1
+#define DRM_MODE_TYPE_PREFERRED 2
+#define MIPI_DSI_MSG_USE_LPM 2
+#define MIPI_DSI_DCS_SHORT_WRITE 5
+#define MIPI_DSI_DCS_LONG_WRITE 0x39
+#define MIPI_DCS_EXIT_SLEEP_MODE 0x11
+#define check_mul_overflow(a,b,p) __builtin_mul_overflow(a,b,p)
+#define mul_u32_u32(a,b) ((uint64_t)(a)*(b))
+#define DIV_ROUND_CLOSEST_ULL(n,d) (((n)+(d)/2)/(d))
+struct drm_display_mode {
+ int clock,hdisplay,hsync_start,hsync_end,htotal,vdisplay,vsync_start,vsync_end,vtotal;
+ unsigned int flags,vscan,type;
+};
+struct drm_crtc_state { struct drm_display_mode adjusted_mode; };
+struct drm_crtc { struct drm_crtc_state *state; };
+struct drm_connector_state { struct drm_crtc *crtc; };
+struct drm_connector {
+ struct drm_connector_state *state; void *dev;
+ struct { int width_mm,height_mm,bpc; } display_info;
+};
+struct drm_panel { void *dev; };
+struct mipi_dsi_msg { int channel,type,flags;size_t tx_len;const void *tx_buf; };
+struct mipi_dsi_host;
+struct host_ops { ssize_t (*transfer)(struct mipi_dsi_host *,const struct mipi_dsi_msg *); };
+struct mipi_dsi_host { const struct host_ops *ops;int id; };
+struct mipi_dsi_device { struct mipi_dsi_host *host;int channel; };
+struct panel_desc { const struct drm_display_mode *modes;int num_modes,width_mm,height_mm,bpc; };
+struct panel_info {
+ struct drm_panel panel;struct drm_connector *connector;bool mode_fallback_warned;
+ struct mipi_dsi_device *dsi[2];const struct panel_desc *desc;
+};
+struct kernel_param { void *arg; };
+static int refresh_hz=120, non_burst;
+static bool dby_params_locked;
+static int warnings, logged_hz, logged_value, logs;
+#define dev_warn(...) (++warnings)
+#define dev_err(...) ((void)0)
+#define dev_info(d,fmt,hz,value) do {logged_hz=hz;logged_value=value;logs++;} while (0)
+static int kstrtoint(const char *s,int base,int *v) {
+ char *end;long n=strtol(s,&end,base);if(*end || end==s)return -EINVAL;*v=n;return 0;
+}
+static struct panel_info *to_panel_info(struct drm_panel *p) {return (struct panel_info *)p;}
+static struct drm_display_mode copies[3];
+static int duplicated,probed,fail_duplicate;
+static struct drm_display_mode *drm_mode_duplicate(void *d,const struct drm_display_mode *m) {
+ (void)d;if(fail_duplicate)return NULL;assert(duplicated<3);copies[duplicated]=*m;return &copies[duplicated++];
+}
+static void drm_mode_set_name(struct drm_display_mode *m) {(void)m;}
+static void drm_mode_probed_add(struct drm_connector *c,struct drm_display_mode *m) {(void)c;(void)m;probed++;}
+struct dby_w09_cmd {u8 type,delay_ms,len,data[6];};
+/* Synthetic commands only: no accepted private panel table in this test. */
+static const struct dby_w09_cmd dby_w09_on[] = {
+ {0x39,0,2,{0xff,0x2a}}, {0x15,0,2,{0x23,0x0c}}, {0x39,0,2,{0xff,0x10}},
+ {5,7,1,{0x11}}, {5,9,1,{0x29}}, {0x15,0,2,{0x55,0x42}},
+};
+static const struct dby_w09_cmd dby_w09_off[] = {{5,2,1,{0x28}}, {5,3,1,{0x10}}};
+struct packet {int link,type,flags;size_t len;u8 data[6];};
+static struct packet packets[32];
+static int n_packets,fail_packet,delay;
+static ssize_t transfer(struct mipi_dsi_host *h,const struct mipi_dsi_msg *m) {
+ int n=n_packets++;assert(n<32 && m->tx_len<=6);packets[n]=(struct packet){h->id,m->type,m->flags,m->tx_len,{0}};
+ memcpy(packets[n].data,m->tx_buf,m->tx_len);
+ return n==fail_packet ? -EIO : (ssize_t)m->tx_len;
+}
+static void msleep(int ms) {delay+=ms;}
+'''
+            harness += function('drm_mode_vrefresh', upstream_modes) + '\n' + modes
+            harness += '\nstatic const struct panel_desc dby_w09_desc = {dby_w09_modes,3,145,232,8};\n'
+            for name in ('dby_profile_set', 'dby_w09_send', 'dby_w09_current_refresh',
+                         'dby_w09_refresh_value', 'dby_w09_set_refresh',
+                         'dby_w09_init_sequence', 'dby_w09_off_sequence', 'nt36523_get_modes'):
+                harness += function(name) + '\n'
+            harness += r'''
+int main(void) {
+ const int rates[]={30,60,120}, vfp[]={8507,2853,26}, vt[]={11308,5654,2827}, values[]={14,12,13};
+ struct drm_crtc_state crtc_state;struct drm_crtc crtc={&crtc_state};
+ struct drm_connector_state state={&crtc};struct drm_connector con={.state=&state};
+ const struct host_ops ops={transfer};struct mipi_dsi_host hosts[]={{&ops,0},{&ops,1}};
+ struct mipi_dsi_device dsi[]={{&hosts[0],0},{&hosts[1],0}};
+ struct panel_info p={.dsi={&dsi[0],&dsi[1]},.desc=&dby_w09_desc};
+ struct kernel_param pref={&refresh_hz}, burst={&non_burst};
+ assert(dby_profile_set("90",&pref)==-EINVAL && dby_profile_set("0",&pref)==-EINVAL);
+ assert(dby_profile_set("30",&pref)==0 && dby_profile_set("60",&pref)==0 && dby_profile_set("120",&pref)==0);
+ assert(dby_profile_set("1",&burst)==0 && non_burst==1 && dby_profile_set("2",&burst)==-EINVAL);
+ dby_params_locked=true;assert(dby_profile_set("60",&pref)==-EBUSY);
+ assert(dby_profile_set("120",&pref)==0 && dby_profile_set("0",&burst)==-EBUSY);
+ for(int i=0;i<3;i++) {
+  const struct drm_display_mode *m=&dby_w09_modes[i];
+  assert(drm_mode_vrefresh(m)==rates[i] && m->clock==584849 && m->htotal==1724);
+  assert(m->vsync_start-m->vdisplay==vfp[i] && m->vtotal==vt[i]);
+  assert(m->hsync_start==1644 && m->hsync_end==1684 && m->vdisplay==2560);
+  assert(m->vsync_end-m->vsync_start==4 && m->vtotal-m->vsync_end==237);
+  assert(dby_w09_refresh_value(rates[i])==values[i]);
+ }
+ for(int preferred=0;preferred<3;preferred++) {
+  refresh_hz=rates[preferred];duplicated=probed=0;
+  assert(nt36523_get_modes(&p.panel,&con)==3 && duplicated==3 && probed==3);
+  assert(p.connector==&con && con.display_info.width_mm==145 && con.display_info.height_mm==232 && con.display_info.bpc==8);
+  for(int i=0;i<3;i++)assert(copies[i].type==(DRM_MODE_TYPE_DRIVER|(i==preferred?DRM_MODE_TYPE_PREFERRED:0)));
+  for(int selected=0;selected<3;selected++) {
+   crtc_state.adjusted_mode=dby_w09_modes[selected];n_packets=delay=logs=warnings=0;fail_packet=-1;
+   assert(dby_w09_current_refresh(&p)==(unsigned)rates[selected]);
+   assert(dby_w09_init_sequence(&p)==0 && logs==1 && logged_hz==rates[selected] && logged_value==values[selected]);
+   assert(n_packets==20 && delay==16 && !warnings);
+   for(int i=0;i<10;i++)for(int link=0;link<2;link++) {
+    struct packet *q=&packets[2*i+link];assert(q->link==link);
+    if(i>=3 && i<7) {
+     const u8 expected[][2]={{0xff,0x2a},{0xfb,1},{0x23,values[selected]},{0xff,0x10}};
+     assert(q->type==0x39 && q->flags==MIPI_DSI_MSG_USE_LPM && q->len==2 && !memcmp(q->data,expected[i-3],2));
+    } else {
+     const struct dby_w09_cmd *original=&dby_w09_on[i<3?i:i-4];
+     assert(q->type==original->type && q->flags==MIPI_DSI_MSG_USE_LPM && q->len==original->len && !memcmp(q->data,original->data,q->len));
+    }
+   }
+  }
+ }
+ /* Missing or unusable current state falls back once per panel, not per prepare. */
+ for(int preferred=0;preferred<3;preferred++) {
+  refresh_hz=rates[preferred];p.mode_fallback_warned=false;warnings=0;p.connector=NULL;
+  assert(dby_w09_current_refresh(&p)==(unsigned)refresh_hz && warnings==1);
+  p.connector=&con;con.state=NULL;assert(dby_w09_current_refresh(&p)==(unsigned)refresh_hz && warnings==1);
+  con.state=&state;state.crtc=NULL;assert(dby_w09_current_refresh(&p)==(unsigned)refresh_hz && warnings==1);
+  state.crtc=&crtc;crtc.state=NULL;assert(dby_w09_current_refresh(&p)==(unsigned)refresh_hz && warnings==1);
+  crtc.state=&crtc_state;crtc_state.adjusted_mode=dby_w09_modes[1];crtc_state.adjusted_mode.clock=0;
+  assert(dby_w09_current_refresh(&p)==(unsigned)refresh_hz && warnings==1);
+ }
+ crtc_state.adjusted_mode=dby_w09_modes[1];
+ /* A failure on either link at any packet aborts before the next write. */
+ for(int i=0;i<20;i++){n_packets=delay=0;fail_packet=i;assert(dby_w09_init_sequence(&p)==-EIO && n_packets==i+1);}
+ n_packets=delay=0;fail_packet=-1;assert(dby_w09_off_sequence(&p)==0 && n_packets==4 && delay==5);
+ for(int i=0;i<4;i++)assert(packets[i].flags==MIPI_DSI_MSG_USE_LPM && packets[i].data[0]==dby_w09_off[i/2].data[0]);
+ hosts[0].ops=NULL;assert(dby_w09_init_sequence(&p)==-EOPNOTSUPP);hosts[0].ops=&ops;
+ struct panel_desc other={dby_w09_modes,3,1,2,8};p.desc=&other;refresh_hz=120;duplicated=probed=0;
+ assert(nt36523_get_modes(&p.panel,&con)==3);assert(copies[0].type==3 && copies[1].type==1 && copies[2].type==1);
+ fail_duplicate=1;assert(nt36523_get_modes(&p.panel,&con)==-ENOMEM);
+ puts("PASS: upstream vrefresh, preferred flags, active-mode override/fallback, LP dual-link writes, original LP sequence and failure aborts");
+ return 0;
+}
+'''
+            (work / 'refresh.c').write_text(harness)
+            subprocess.run(['cc', '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            '-Wno-sign-compare', str(work / 'refresh.c'),
+                            '-o', str(work / 'refresh')], check=True)
+            subprocess.run([str(work / 'refresh')], check=True)
 
     def test_actual_functions(self):
         with tempfile.TemporaryDirectory() as tmp:

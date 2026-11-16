@@ -1,0 +1,267 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] drm/panel: nt36523: expose three DBY-W09 refresh modes
+
+Expose 30/60/120 Hz with one pixel clock and variable vertical front porch.
+Use refresh_hz only to select the preferred mode; program the active CRTC
+rate before sleep-out with the stock selector values in LP mode.
+Keep owner data, power timing and the ESD recovery policy unchanged.
+
+---
+
+--- a/drivers/gpu/drm/panel/panel-novatek-nt36523.c
++++ b/drivers/gpu/drm/panel/panel-novatek-nt36523.c
+@@ -38,7 +38,7 @@
+ module_param(esd_recovery, bool, 0644);
+ MODULE_PARM_DESC(esd_recovery, "ESD pipe recovery (0 logs only, 1 resets)");
+ 
+-/* DBY-W09 debug: Fixed boot profiles; MSM caches video flags at attach. */
++/* DBY-W09: Preferred mode and video flags are fixed at probe. */
+ static int refresh_hz = 120;
+ static int non_burst;
+ static bool dby_params_locked;
+@@ -51,7 +51,7 @@
+ 	if (ret)
+ 		return ret;
+ 	if (kp->arg == &refresh_hz) {
+-		if (value != 60 && value != 120)
++		if (value != 30 && value != 60 && value != 120)
+ 			return -EINVAL;
+ 	} else if (value != 0 && value != 1) {
+ 		return -EINVAL;
+@@ -69,7 +69,7 @@
+ 	.get = param_get_int,
+ };
+ module_param_cb(refresh_hz, &dby_profile_ops, &refresh_hz, 0600);
+-MODULE_PARM_DESC(refresh_hz, "DBY refresh 60/120; reload module to change after probe");
++MODULE_PARM_DESC(refresh_hz, "DBY preferred refresh 30/60/120; locked after probe");
+ module_param_cb(non_burst, &dby_profile_ops, &non_burst, 0600);
+ MODULE_PARM_DESC(non_burst, "DBY non-burst 0/1; reload module to change after probe");
+ 
+@@ -79,6 +79,8 @@
+ 	struct mipi_dsi_device *dsi[2];
+ 	const struct panel_desc *desc;
+ 	enum drm_panel_orientation orientation;
++	struct drm_connector *connector;
++	bool mode_fallback_warned;
+ 
+ 	struct gpio_desc *reset_gpio;
+ 	struct backlight_device *backlight;
+@@ -1254,24 +1256,20 @@
+ #include "dby-w09-panel-data.h"
+ 
+ static int dby_w09_send(struct panel_info *pinfo,
+-			const struct dby_w09_cmd *cmds, size_t count)
++			const struct dby_w09_cmd *cmds, size_t count, u16 flags)
+ {
+ 	size_t i;
+ 	int link;
+ 
+ 	for (i = 0; i < count; i++) {
+ 		struct dby_w09_cmd cmd = cmds[i];
+-
+-		/* DBY-W09 debug: Page 2a, packet 24 selects the boot frame rate. */
+-		if (cmds == dby_w09_on && i == 23 && refresh_hz == 120)
+-			cmd.data[1] = 0x0d;
+ 
+ 		for (link = 0; link < ARRAY_SIZE(pinfo->dsi); link++) {
+ 			struct mipi_dsi_device *dsi = pinfo->dsi[link];
+ 			struct mipi_dsi_msg msg = {
+ 				.channel = dsi->channel,
+ 				.type = cmd.type,
+-				.flags = MIPI_DSI_MSG_USE_LPM,
++				.flags = flags,
+ 				.tx_len = cmd.len,
+ 				.tx_buf = cmd.data,
+ 			};
+@@ -1291,48 +1289,137 @@
+ 	return 0;
+ }
+ 
++static unsigned int dby_w09_current_refresh(struct panel_info *pinfo)
++{
++	struct drm_connector_state *state;
++	struct drm_crtc_state *crtc_state;
++	unsigned int hz;
++
++	/* get_modes records the connector; prepare runs after the atomic swap. */
++	state = pinfo->connector ? pinfo->connector->state : NULL;
++	crtc_state = state && state->crtc ? state->crtc->state : NULL;
++	if (crtc_state) {
++		hz = drm_mode_vrefresh(&crtc_state->adjusted_mode);
++		if (hz == 30 || hz == 60 || hz == 120)
++			return hz;
++	}
++
++	if (!pinfo->mode_fallback_warned) {
++		dev_warn(pinfo->panel.dev,
++			 "panel: no supported current mode, using preferred %d Hz\n",
++			 refresh_hz);
++		pinfo->mode_fallback_warned = true;
++	}
++	return refresh_hz;
++}
++
++static u8 dby_w09_refresh_value(unsigned int hz)
++{
++	switch (hz) {
++	case 30:
++		return 0x0e;
++	case 120:
++		return 0x0d;
++	default: /* 60 Hz; current_refresh only returns the three supported rates. */
++		return 0x0c;
++	}
++}
++
++static int dby_w09_set_refresh(struct panel_info *pinfo)
++{
++	unsigned int hz = dby_w09_current_refresh(pinfo);
++	u8 value = dby_w09_refresh_value(hz);
++	const struct dby_w09_cmd cmds[] = {
++		{ MIPI_DSI_DCS_LONG_WRITE, 0, 2, { 0xff, 0x2a } },
++		{ MIPI_DSI_DCS_LONG_WRITE, 0, 2, { 0xfb, 0x01 } },
++		{ MIPI_DSI_DCS_LONG_WRITE, 0, 2, { 0x23, value } },
++		{ MIPI_DSI_DCS_LONG_WRITE, 0, 2, { 0xff, 0x10 } },
++	};
++
++	dev_info(pinfo->panel.dev, "panel: mode %u Hz, 0x23=0x%02x\n", hz, value);
++	/* Stock to-30/60/120 values, sent in LP with the init sequence. */
++	return dby_w09_send(pinfo, cmds, ARRAY_SIZE(cmds), MIPI_DSI_MSG_USE_LPM);
++}
++
+ static int dby_w09_init_sequence(struct panel_info *pinfo)
+ {
+-	return dby_w09_send(pinfo, dby_w09_on, ARRAY_SIZE(dby_w09_on));
++	size_t sleep_out;
++	int ret;
++
++	/*
++	 * Keep the pinned owner table intact, including its initial 60 Hz write.
++	 * Insert the selected rate immediately before sleep-out/display-on, where
++	 * the table is already on page 0x10; return to that page before resuming.
++	 * No packet index, delay, power sequencing or off-command change.
++	 */
++	for (sleep_out = 0; sleep_out < ARRAY_SIZE(dby_w09_on); sleep_out++)
++		if (dby_w09_on[sleep_out].type == MIPI_DSI_DCS_SHORT_WRITE &&
++		    dby_w09_on[sleep_out].len == 1 &&
++		    dby_w09_on[sleep_out].data[0] == MIPI_DCS_EXIT_SLEEP_MODE)
++			break;
++	if (sleep_out == ARRAY_SIZE(dby_w09_on))
++		return -EINVAL;
++
++	ret = dby_w09_send(pinfo, dby_w09_on, sleep_out, MIPI_DSI_MSG_USE_LPM);
++	if (ret)
++		return ret;
++	ret = dby_w09_set_refresh(pinfo);
++	if (ret)
++		return ret;
++	return dby_w09_send(pinfo, dby_w09_on + sleep_out,
++			    ARRAY_SIZE(dby_w09_on) - sleep_out, MIPI_DSI_MSG_USE_LPM);
+ }
+ 
+ static int dby_w09_off_sequence(struct panel_info *pinfo)
+ {
+-	return dby_w09_send(pinfo, dby_w09_off, ARRAY_SIZE(dby_w09_off));
++	return dby_w09_send(pinfo, dby_w09_off, ARRAY_SIZE(dby_w09_off),
++			    MIPI_DSI_MSG_USE_LPM);
+ }
+ 
+ static const struct nt36523_reset_step dby_w09_reset_steps[] = {
+ 	{ 1, 5 }, { 0, 5 }, { 1, 5 }, { 0, 20 },
+ };
+ 
+-static const struct drm_display_mode dby_w09_mode = {
+-	.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
+-	.hdisplay = 1600,
+-	.hsync_start = 1600 + 44,
+-	.hsync_end = 1600 + 44 + 40,
+-	.htotal = 1600 + 44 + 40 + 40,
+-	.vdisplay = 2560,
+-	.vsync_start = 2560 + 2853,
+-	.vsync_end = 2560 + 2853 + 4,
+-	.vtotal = 2560 + 2853 + 4 + 237,
++/* Same pixel clock and horizontal timing at every rate; only VFP differs. */
++static const struct drm_display_mode dby_w09_modes[] = {
++	{
++		.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
++		.hdisplay = 1600,
++		.hsync_start = 1600 + 44,
++		.hsync_end = 1600 + 44 + 40,
++		.htotal = 1600 + 44 + 40 + 40,
++		.vdisplay = 2560,
++		.vsync_start = 2560 + 8507,
++		.vsync_end = 2560 + 8507 + 4,
++		.vtotal = 2560 + 8507 + 4 + 237,
++	},
++	{
++		.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
++		.hdisplay = 1600,
++		.hsync_start = 1600 + 44,
++		.hsync_end = 1600 + 44 + 40,
++		.htotal = 1600 + 44 + 40 + 40,
++		.vdisplay = 2560,
++		.vsync_start = 2560 + 2853,
++		.vsync_end = 2560 + 2853 + 4,
++		.vtotal = 2560 + 2853 + 4 + 237,
++	},
++	{
++		.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
++		.hdisplay = 1600,
++		.hsync_start = 1600 + 44,
++		.hsync_end = 1600 + 44 + 40,
++		.htotal = 1600 + 44 + 40 + 40,
++		.vdisplay = 2560,
++		.vsync_start = 2560 + 26,
++		.vsync_end = 2560 + 26 + 4,
++		.vtotal = 2560 + 26 + 4 + 237,
++	},
+ };
+ 
+-/* DBY-W09 debug: Same pixel clock/hsync as 60 Hz; only VFP changes. */
+-static const struct drm_display_mode dby_w09_mode_120 = {
+-	.clock = (1600 + 44 + 40 + 40) * (2560 + 2853 + 4 + 237) * 60 / 1000,
+-	.hdisplay = 1600,
+-	.hsync_start = 1600 + 44,
+-	.hsync_end = 1600 + 44 + 40,
+-	.htotal = 1600 + 44 + 40 + 40,
+-	.vdisplay = 2560,
+-	.vsync_start = 2560 + 26,
+-	.vsync_end = 2560 + 26 + 4,
+-	.vtotal = 2560 + 26 + 4 + 237,
+-};
+-
+ static const struct panel_desc dby_w09_desc = {
+-	.modes = &dby_w09_mode,
+-	.num_modes = 1,
++	.modes = dby_w09_modes,
++	.num_modes = ARRAY_SIZE(dby_w09_modes),
+ 	.dsi_info = {
+ 		.type = "NT36523",
+ 		.channel = 0,
+@@ -1608,13 +1695,12 @@
+ 	struct panel_info *pinfo = to_panel_info(panel);
+ 	int i;
+ 
++	if (pinfo->desc == &dby_w09_desc)
++		pinfo->connector = connector;
++
+ 	for (i = 0; i < pinfo->desc->num_modes; i++) {
+ 		const struct drm_display_mode *m = &pinfo->desc->modes[i];
+ 		struct drm_display_mode *mode;
+-
+-		/* DBY-W09 debug: Expose one consistent boot profile. */
+-		if (pinfo->desc == &dby_w09_desc && refresh_hz == 120)
+-			m = &dby_w09_mode_120;
+ 
+ 		mode = drm_mode_duplicate(connector->dev, m);
+ 		if (!mode) {
+@@ -1624,7 +1710,8 @@
+ 		}
+ 
+ 		mode->type = DRM_MODE_TYPE_DRIVER;
+-		if (i == 0)
++		if (pinfo->desc == &dby_w09_desc ?
++		    drm_mode_vrefresh(m) == refresh_hz : i == 0)
+ 			mode->type |= DRM_MODE_TYPE_PREFERRED;
+ 
+ 		drm_mode_set_name(mode);

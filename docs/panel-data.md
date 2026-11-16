@@ -36,7 +36,7 @@ python3 -B tools/extract-panel-data.py \
 
 输出父目录须已存在；工具拒绝覆盖文件，生成文件权限为 0600。它只读两个属性，不输出完整 DTB 或执行其中内容。历史提取检查使用既有本地 DTB，结果与旧补丁数组逐字节一致；不是重新读取设备或实机运行验证。R4（2026-11-15）复用已有匹配头文件，不重做提取。
 
-按[构建指南](build.zh-CN.md)应用十三个补丁（0001–0013）后、运行 make 前，将头文件复制到独立内核源码树：
+按[构建指南](build.zh-CN.md)应用十四个补丁（0001–0014）后、运行 make 前，将头文件复制到独立内核源码树：
 
 ```sh
 test ! -e "$KERNEL_SOURCE/drivers/gpu/drm/panel/dby-w09-panel-data.h"
