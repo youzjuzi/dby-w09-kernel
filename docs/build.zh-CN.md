@@ -8,7 +8,7 @@
 
 ## 1. 准备输入与工具
 
-- 本仓库的十二个补丁和 `config/dby-w09.config`。
+- 本仓库的十三个补丁和 `config/dby-w09.config`。
 - 自行取得上游 `linux-7.2.10.tar.xz`；预期 SHA-256 在下方命令及首页中。摘要一致说明输入与本项目基线一致，不代替来源核实。
 - Linux 主机、主机 C 编译器及开发头文件、arm64 GCC/binutils（前缀 `aarch64-linux-gnu-`）。已有配置记录的 GCC 版本为 15.2；其他版本可能影响配置、警告和产物，本文不承诺逐字节复现。
 - GNU make、patch、tar、xz、bash、coreutils（含 sha256sum、realpath）、bc、bison、flex、Python 3，以及 OpenSSL/libcrypto 和 libelf 开发文件。具体最低要求以该压缩包中的 `Documentation/process/changes.rst` 为准；如修改配置启用 BTF，还需匹配的 pahole。
@@ -43,7 +43,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 12
+test "$#" -eq 13
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done

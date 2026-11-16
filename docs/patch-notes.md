@@ -67,3 +67,37 @@ patches 0009/0010 and the companion amplifier module, all four TFA9874 amplifier
 locked to Primary TDM0 and played desktop audio with no clock, TDM or clip flags,
 and four-channel capture kept working. Desktop loudness depends on the Linux
 package's WirePlumber S16LE rule; this kernel tree is unchanged by that rule.
+
+## 0013: GPIO alarm IRQ recovery (O, hardware Pending)
+
+Patch 0013 extends the binding in the new patch, leaving 0001 unchanged.
+Optional `esd-gpios` allows one or two alarm inputs, normal low; this recovery
+policy requires two corroborating outputs. Missing inputs leave monitoring off;
+a single input or an acquisition/IRQ error warns and disables monitoring without
+failing panel probe. Partial IRQ requests and GPIO ownership are released on
+failure. No pin bias, panel power timing, DCS command or DPU/DSI change is made.
+
+Both edges restart a 1000 ms delayed check; enable also schedules one check.
+Under DRM modeset locks, work rechecks the deadline, enabled flag, two high GPIOs
+and an active connector/CRTC. GPIO read errors never count as high. The panel
+bridge reference is balanced, with a bridge lifetime guard; reset uses upstream
+`drm_bridge_helper_reset_crtc()` and modeset backoff on `-EDEADLK`, following
+`ti-sn65dsi83.c`. Touch continues to use its existing panel follower callbacks.
+Disable clears enabled and cancels non-synchronously: reset itself calls disable
+and enable, so waiting for this work in either callback would deadlock. Remove
+blocks new scheduling, disables both IRQs, then synchronously cancels work.
+
+There are at most five attempts in any rolling 60 seconds. A sixth request logs
+once and blocks recovery for 60 seconds; the next edge or enable after that can
+recover again. There is no polling or independent cooldown timer. A successful
+reset's enable schedules the follow-up check, including persistent-high alarms.
+`esd_recovery` defaults to 1, is writable at runtime (0644), and 0 logs
+“would reset” without resetting. It retains GPIO ownership and IRQ monitoring.
+
+The stock panel DT enables GPIO-only ESD detection on TLMM 135/136 with normal
+value 0. Both-high detection and the one-second delay follow the existing
+userspace watchdog policy and reported sub-second enable transients. This IRQ
+adaptation, reset latency, touch recovery and real failure rate remain Pending;
+software tests and compilation cannot validate them. The minimum-off experiment
+is not part of this series. See the hub's display recovery instructions before
+manually starting the retained Python watchdog.

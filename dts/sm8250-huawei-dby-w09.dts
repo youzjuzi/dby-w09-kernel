@@ -470,6 +470,7 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
 		reg = <0>;
 		vddio-supply = <&display_l14a>;
 		reset-gpios = <&tlmm 38 GPIO_ACTIVE_LOW>;
+		esd-gpios = <&tlmm 135 GPIO_ACTIVE_HIGH>, <&tlmm 136 GPIO_ACTIVE_HIGH>;
 		ports {
 			#address-cells = <1>;
 			#size-cells = <0>;

@@ -1,0 +1,348 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] drm/panel: nt36523: recover dual GPIO alarms through DRM
+
+Use optional alarm GPIO IRQs and one-second debounce to reset the active
+pipe via the standard bridge helper. Keep callbacks non-blocking with
+respect to recovery work; bound recovery to five attempts per 60 seconds.
+This adaptation of the existing watchdog policy needs hardware validation.
+
+---
+
+--- a/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
++++ b/Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml
+@@ -30,6 +30,14 @@
+ 
+   reg:
+     maxItems: 1
++
++  esd-gpios:
++    minItems: 1
++    maxItems: 2
++    description: |
++      Panel alarm outputs, normally low. Both outputs high indicate a panel
++      fault on dual-output panels. The DBY-W09 recovery policy requires two
++      outputs; a single output does not enable automatic recovery.
+ 
+   reset-gpios:
+     maxItems: 1
+--- a/drivers/gpu/drm/panel/panel-novatek-nt36523.c
++++ b/drivers/gpu/drm/panel/panel-novatek-nt36523.c
+@@ -8,20 +8,35 @@
+ #include <linux/backlight.h>
+ #include <linux/delay.h>
+ #include <linux/gpio/consumer.h>
++#include <linux/interrupt.h>
++#include <linux/jiffies.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_graph.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/spinlock.h>
++#include <linux/workqueue.h>
+ 
+ #include <video/mipi_display.h>
+ 
++#include <drm/drm_atomic.h>
++#include <drm/drm_bridge.h>
++#include <drm/drm_bridge_helper.h>
+ #include <drm/drm_connector.h>
+ #include <drm/drm_crtc.h>
+ #include <drm/drm_mipi_dsi.h>
+ #include <drm/drm_modes.h>
++#include <drm/drm_modeset_lock.h>
+ #include <drm/drm_panel.h>
+ 
+ #define DSI_NUM_MIN 1
++#define ESD_DEBOUNCE_MS 1000
++#define ESD_LIMIT 5
++#define ESD_WINDOW (60 * HZ)
++
++static bool esd_recovery = true;
++module_param(esd_recovery, bool, 0644);
++MODULE_PARM_DESC(esd_recovery, "ESD pipe recovery (0 logs only, 1 resets)");
+ 
+ /* DBY-W09 debug: Fixed boot profiles; MSM caches video flags at attach. */
+ static int refresh_hz = 120;
+@@ -73,6 +88,15 @@
+ 	struct regulator *vci, *vsp, *vsn;
+ 	unsigned long power_enabled;
+ 	bool boot_power_cycled;
++	struct gpio_descs *esd_gpios;
++	struct delayed_work esd_work;
++	spinlock_t esd_lock;
++	int esd_irqs[2];
++	bool esd_ready, esd_enabled, esd_stopping;
++	unsigned long esd_deadline;
++	unsigned long esd_attempts[ESD_LIMIT], esd_resume;
++	unsigned int esd_count;
++	bool esd_limited;
+ };
+ 
+ struct nt36523_reset_step {
+@@ -104,6 +128,195 @@
+ static inline struct panel_info *to_panel_info(struct drm_panel *panel)
+ {
+ 	return container_of(panel, struct panel_info, panel);
++}
++
++/*
++ * DBY-W09: stock DT enables GPIO ESD detection on TLMM 135/136, normal low.
++ * Both-high plus one second follows the userspace watchdog and observed
++ * sub-second enable transients; IRQ adaptation is not hardware-validated.
++ * Use the upstream sn65dsi83 reset helper, without changing panel timings.
++ */
++static void nt36523_esd_queue(struct panel_info *pinfo)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	if (pinfo->esd_ready && pinfo->esd_enabled && !pinfo->esd_stopping) {
++		pinfo->esd_deadline = jiffies + msecs_to_jiffies(ESD_DEBOUNCE_MS);
++		mod_delayed_work(system_wq, &pinfo->esd_work,
++				 msecs_to_jiffies(ESD_DEBOUNCE_MS));
++	}
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
++}
++
++static irqreturn_t nt36523_esd_irq(int irq, void *data)
++{
++	nt36523_esd_queue(data);
++	return IRQ_HANDLED;
++}
++
++static bool nt36523_esd_pending(struct panel_info *pinfo)
++{
++	unsigned long flags, now;
++	bool pending = false;
++
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	if (pinfo->esd_ready && pinfo->esd_enabled && !pinfo->esd_stopping) {
++		/* An edge while work was waiting for modeset locks restarts debounce. */
++		now = jiffies;
++		if (time_before(now, pinfo->esd_deadline))
++			mod_delayed_work(system_wq, &pinfo->esd_work,
++					 pinfo->esd_deadline - now);
++		else
++			pending = true;
++	}
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
++	return pending;
++}
++
++/* Only this delayed work accesses the rolling recovery budget. */
++static bool nt36523_esd_budget(struct panel_info *pinfo)
++{
++	unsigned long now = jiffies;
++	unsigned int i, count = 0;
++
++	if (pinfo->esd_limited) {
++		if (time_before(now, pinfo->esd_resume))
++			return false;
++		pinfo->esd_limited = false;
++		pinfo->esd_count = 0;
++	}
++	for (i = 0; i < pinfo->esd_count; i++)
++		if (time_before(now, pinfo->esd_attempts[i] + ESD_WINDOW))
++			pinfo->esd_attempts[count++] = pinfo->esd_attempts[i];
++	pinfo->esd_count = count;
++	if (count == ESD_LIMIT) {
++		pinfo->esd_limited = true;
++		pinfo->esd_resume = now + ESD_WINDOW;
++		dev_info(pinfo->panel.dev, "esd: giving up for 60 s\n");
++		return false;
++	}
++	pinfo->esd_attempts[pinfo->esd_count++] = now;
++	return true;
++}
++
++static void nt36523_esd_work(struct work_struct *work)
++{
++	struct panel_info *pinfo = container_of(to_delayed_work(work),
++					       struct panel_info, esd_work);
++	struct drm_modeset_acquire_ctx ctx;
++	struct drm_connector *connector;
++	struct drm_bridge *bridge;
++	bool attempted = false;
++	int ret = 0, idx;
++
++	bridge = of_drm_find_and_get_bridge(pinfo->panel.dev->of_node);
++	if (!bridge)
++		return;
++	if (!drm_bridge_enter(bridge, &idx))
++		goto put_bridge;
++	if (!bridge->encoder)
++		goto exit_bridge;
++
++	drm_modeset_acquire_init(&ctx, 0);
++retry:
++	/* Recheck under modeset locks: never reset a concurrently disabled CRTC. */
++	ret = drm_modeset_lock_all_ctx(bridge->encoder->dev, &ctx);
++	if (ret)
++		goto backoff;
++	if (!nt36523_esd_pending(pinfo))
++		goto unlock;
++	if (gpiod_get_value_cansleep(pinfo->esd_gpios->desc[0]) != 1 ||
++	    gpiod_get_value_cansleep(pinfo->esd_gpios->desc[1]) != 1)
++		goto unlock;
++	/* GPIO reads may sleep while a newer edge restarts the deadline. */
++	if (!nt36523_esd_pending(pinfo))
++		goto unlock;
++	/* The helper requires a connector with a non-NULL CRTC. */
++	connector = drm_atomic_get_connector_for_encoder(bridge->encoder, &ctx);
++	if (IS_ERR(connector)) {
++		ret = PTR_ERR(connector);
++		goto backoff;
++	}
++	if (!connector || !connector->state || !connector->state->crtc ||
++	    !connector->state->crtc->state->active)
++		goto unlock;
++	if (!READ_ONCE(esd_recovery)) {
++		dev_info(pinfo->panel.dev, "esd: both flags high, would reset\n");
++		goto unlock;
++	}
++	if (!attempted) {
++		if (!nt36523_esd_budget(pinfo))
++			goto unlock;
++		attempted = true;
++		dev_info(pinfo->panel.dev,
++			 "esd: both flags high for >=1000 ms, resetting pipe (%u/5)\n",
++			 pinfo->esd_count);
++	}
++	ret = drm_bridge_helper_reset_crtc(bridge, &ctx);
++backoff:
++	if (ret == -EDEADLK) {
++		ret = drm_modeset_backoff(&ctx);
++		if (!ret)
++			goto retry;
++	}
++unlock:
++	drm_modeset_drop_locks(&ctx);
++	drm_modeset_acquire_fini(&ctx);
++	if (attempted)
++		dev_info(pinfo->panel.dev, "esd: reset done (ret=%d)\n", ret);
++exit_bridge:
++	drm_bridge_exit(idx);
++put_bridge:
++	drm_bridge_put(bridge);
++}
++
++static void nt36523_esd_init(struct panel_info *pinfo)
++{
++	struct device *dev = pinfo->panel.dev;
++	unsigned long flags;
++	int i, ret;
++
++	pinfo->esd_gpios = devm_gpiod_get_array_optional(dev, "esd", GPIOD_IN);
++	if (IS_ERR(pinfo->esd_gpios)) {
++		ret = PTR_ERR(pinfo->esd_gpios);
++		pinfo->esd_gpios = NULL;
++		goto warn;
++	}
++	if (!pinfo->esd_gpios)
++		return;
++	/* This recovery policy requires corroboration from both alarm outputs. */
++	if (pinfo->esd_gpios->ndescs != 2) {
++		ret = -EINVAL;
++		goto put_gpios;
++	}
++	for (i = 0; i < 2; i++) {
++		ret = gpiod_to_irq(pinfo->esd_gpios->desc[i]);
++		if (ret < 0)
++			goto free_irqs;
++		pinfo->esd_irqs[i] = ret;
++		ret = devm_request_irq(dev, pinfo->esd_irqs[i], nt36523_esd_irq,
++				       IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				       dev_name(dev), pinfo);
++		if (ret)
++			goto free_irqs;
++	}
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	pinfo->esd_ready = true;
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
++	dev_info(dev, "esd: monitoring 2 gpios (irq)\n");
++	/* Also cover an enable that completed while probe was attaching DSI. */
++	nt36523_esd_queue(pinfo);
++	return;
++
++free_irqs:
++	while (i--)
++		devm_free_irq(dev, pinfo->esd_irqs[i], pinfo);
++put_gpios:
++	devm_gpiod_put_array(dev, pinfo->esd_gpios);
++	pinfo->esd_gpios = NULL;
++warn:
++	dev_warn(dev, "esd: monitoring disabled (%d)\n", ret);
+ }
+ 
+ static int elish_boe_init_sequence(struct panel_info *pinfo)
+@@ -1307,6 +1520,7 @@
+ static int nt36523_enable(struct drm_panel *panel)
+ {
+ 	struct panel_info *pinfo = to_panel_info(panel);
++	unsigned long flags;
+ 	int ret;
+ 
+ 	/* DBY-W09: Keep disable reachable even if enabling the backlight fails. */
+@@ -1314,13 +1528,25 @@
+ 	if (ret < 0)
+ 		dev_warn(panel->dev, "failed to enable backlight: %d\n", ret);
+ 
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	pinfo->esd_enabled = true;
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
++	nt36523_esd_queue(pinfo);
++
+ 	return 0;
+ }
+ 
+ static int nt36523_disable(struct drm_panel *panel)
+ {
+ 	struct panel_info *pinfo = to_panel_info(panel);
++	unsigned long flags;
+ 	int i;
++
++	/* Reset work calls us while holding modeset locks: never wait for it. */
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	pinfo->esd_enabled = false;
++	cancel_delayed_work(&pinfo->esd_work);
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
+ 
+ 	/* DBY-W09: Blank the external backlight before any panel-off command. */
+ 	backlight_disable(pinfo->ext_backlight);
+@@ -1361,6 +1587,17 @@
+ static void nt36523_remove(struct mipi_dsi_device *dsi)
+ {
+ 	struct panel_info *pinfo = mipi_dsi_get_drvdata(dsi);
++	unsigned long flags;
++	int i;
++
++	spin_lock_irqsave(&pinfo->esd_lock, flags);
++	pinfo->esd_stopping = true;
++	pinfo->esd_enabled = false;
++	spin_unlock_irqrestore(&pinfo->esd_lock, flags);
++	if (pinfo->esd_ready)
++		for (i = 0; i < 2; i++)
++			disable_irq(pinfo->esd_irqs[i]);
++	cancel_delayed_work_sync(&pinfo->esd_work);
+ 
+ 	drm_panel_remove(&pinfo->panel);
+ }
+@@ -1485,6 +1722,9 @@
+ 				     DRM_MODE_CONNECTOR_DSI);
+ 	if (IS_ERR(pinfo))
+ 		return PTR_ERR(pinfo);
++
++	spin_lock_init(&pinfo->esd_lock);
++	INIT_DELAYED_WORK(&pinfo->esd_work, nt36523_esd_work);
+ 
+ 	pinfo->vddio = devm_regulator_get(dev, "vddio");
+ 	if (IS_ERR(pinfo->vddio))
+@@ -1570,6 +1810,8 @@
+ 		if (ret < 0)
+ 			return dev_err_probe(dev, ret, "cannot attach to DSI%d host.\n", i);
+ 	}
++
++	nt36523_esd_init(pinfo);
+ 
+ 	return 0;
+ }

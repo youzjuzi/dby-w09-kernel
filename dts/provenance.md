@@ -117,3 +117,12 @@ port registers and only the QMP PHY orientation switch/mux appear; NCM gadget,
 PD 9 V and 5 V charging, and a USB 2.0 hub work in both plug orientations.
 Actual SuperSpeed (5 Gbps) link operation has not been tested yet because no
 USB 3 cable or adapter was available.
+
+
+The panel's optional `esd-gpios` names TLMM 135 and 136 as active-high inputs.
+The owner stock DT's `lcd_kit_debussy_290_20d_10p9_qcom` node declares
+`qcom,esd-check-enabled`, `qcom,esd-only-gpio-detect`, GPIO numbers 135/136
+and normal value 0. Only those public wiring facts are carried over. No pinctrl
+or bias override is added; inherited bias is retained. Both-high plus a 1000 ms
+IRQ debounce follows the previous watchdog and reported enable transients;
+IRQ-based recovery is an offline candidate, not hardware-validated.
