@@ -119,6 +119,15 @@ boot-on 不等于 always-on：Linux 7.2.10 不为只有 boot-on 的 regulator �
 
 The board DTS describes all four panel supplies by default, with patch 0011. VCI uses RPMh LDO11 in HPM without boot-on. The three GPIO-controlled fixed regulators use boot-on to request high GPIO levels at probe. They are not always-on: the first panel prepare still acquires and releases their enable references, switches them off, waits 100 ms and powers them on again. This is an offline source analysis, not hardware validation. Voltage properties describe the rails; GPIOs do not program or measure their voltage.
 
+## Lid wake source
+
+The `hall-lid` switch is a wake source only on deassertion: with its active-low
+GPIO, opening the lid selects a rising wake edge. Upstream gpio-keys restores
+both edges on resume, preserving ordinary close/open events while awake.
+Volume keys are unchanged. This describes the DT and driver path (O); actual
+lid wake and suspend/resume behavior remain unverified (U). It does not change
+the desktop lid policy or request system suspend.
+
 ## GPIO vibrator
 
 The board selects the upstream `gpio-vibrator` driver (`CONFIG_INPUT_GPIO_VIBRA=m`)

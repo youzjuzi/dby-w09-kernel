@@ -9,6 +9,7 @@
 #include "sm8250.dtsi"
 #include "pm8150.dtsi"
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/input/gpio-keys.h>
 
 /* Minimal PM8150L nodes from upstream pm8150l.dtsi. The owner-supplied
  * runtime FDT places the indicator on USID 5: PWM 0/red, PWM 1/green.
@@ -1187,6 +1188,8 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
 			linux,input-type = <EV_SW>;
 			linux,code = <SW_LID>;
 			debounce-interval = <200>;
+			wakeup-source;
+			wakeup-event-action = <EV_ACT_DEASSERTED>;
 		};
 	};
 };
