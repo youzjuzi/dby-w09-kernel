@@ -4,7 +4,7 @@
 
 本目录提供整理后的 `sm8250-huawei-dby-w09.dts`：基于 Linux 7.2.10 的标准 SM8250/PM8150 include，合并本项目历史板级修改及 USB 片段。它不再引用项目内部实验目录，也不是发布整棵反编译树。源码仍按历史功能层组织，尚未整理成可提交上游的最小板级文件。来源及离线比对见[provenance.md](provenance.md)。
 
-PON 重启模式配合补丁 0015：Linux 普通重启（包括桌面“重启”和无参数 `reboot`）与 `reboot recovery` 预期进入 Recovery 中的 U-Boot 菜单，`reboot bootloader` 预期进入 fastboot；关机和 halt 不写重启模式寄存器。本组合及“回鸿蒙”是否回环待实机验证（U）。With patch 0015, PON reboot modes request the recovery-resident U-Boot menu for normal reboot and `reboot recovery`, or fastboot for `reboot bootloader`. Power-off and halt do not write the reboot mode register. This combination and return-to-HarmonyOS loop behavior remain pending device validation (U).
+PON 重启模式配合补丁 0015:Linux 普通重启(桌面"重启"、无参数 `reboot`)与 `reboot recovery` 进入 Recovery 中的 U-Boot 菜单;关机和 halt 不写重启模式寄存器,关机后开机仍进鸿蒙;菜单选"回鸿蒙"不回环(实机 R,一台平板,2026-11-17;需要 U-Boot 补丁 0013 的 `MISC NO COMMAND` 处理)。`reboot bootloader` 预期进入 fastboot,未实机验证(U)。With patch 0015, normal reboot (desktop restart, `reboot`) and `reboot recovery` enter the recovery-resident U-Boot menu; power-off and halt do not write the reboot mode register, so power-on after shutdown boots HarmonyOS, and returning to HarmonyOS from the menu does not loop (device result R, one tablet, 2026-11-17; requires U-Boot patch 0013 `MISC NO COMMAND` handling). `reboot bootloader` is expected to enter fastboot but is unverified (U).
 
 **私有输入仍必需：** `dby-memory-private.dtsi` 由所有者从自己的原厂运行时 FDT 生成，不随仓库提供。板级源码不包含蓝牙地址。面板驱动的私有命令表是另一项输入，见[面板教程](../docs/panel-data.md)。
 

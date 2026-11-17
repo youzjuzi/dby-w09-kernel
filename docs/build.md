@@ -53,7 +53,7 @@ make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
   ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules
 ```
 
-Patch 0015 restricts reboot-mode writes to `SYS_RESTART`; halt and power-off leave the reboot reason unchanged. The board maps normal restart and recovery to the U-Boot menu, with device validation pending (U).
+Patch 0015 restricts reboot-mode writes to `SYS_RESTART`; halt and power-off leave the reboot reason unchanged. The board maps normal restart and recovery to the U-Boot menu. Device result (R, one tablet, 2026-11-17): desktop restart and `reboot` reach the menu, power-off followed by power-on boots HarmonyOS, and choosing HarmonyOS in the menu does not loop. This requires the U-Boot `MISC NO COMMAND` handling (dby-w09-uboot patch 0013).
 
 Patches apply in filename order with zero fuzz. Review changes made by `olddefconfig` and retain the resulting `.config`; toolchain differences may change it. Do not ignore patch errors or disable required features to force progress. Parallelism is omitted; add `-jN` only as appropriate for host memory.
 
