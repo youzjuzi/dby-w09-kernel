@@ -71,7 +71,9 @@ The PM8xxx RTC driver is built in (`CONFIG_RTC_DRV_PM8XXX=y`). In the preceding 
 controls such as `pm_test`, `pm_print_times` and `pm_wakeup_irq`. Automatic sleep,
 wakelocks and boot-time suspend testing remain disabled. `CONFIG_QCOM_STATS=m`
 is unchanged; the device pack now includes its module for OF autoload and
-read-only RPMh/SMEM sleep counters. These are offline preparation changes and
+read-only RPMh/SMEM sleep counters. SL1-fix1 removes the board's old disabled
+override for this node; hardware access and probe remain unverified.
+These are offline preparation changes and
 do not establish working suspend or wake sources (U).
 
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.

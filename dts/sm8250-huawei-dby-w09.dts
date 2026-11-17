@@ -182,7 +182,7 @@
 &{/soc@0/clock-controller@ad00000} { status="disabled"; };
 &{/soc@0/display-subsystem@ae00000} { status="disabled"; };
 &{/soc@0/clock-controller@af00000} { status="disabled"; };
-&{/soc@0/sram@c3f0000} { status="disabled"; };
+/* Keep read-only RPMh sleep statistics enabled for suspend/power diagnostics. */
 &{/soc@0/spmi@c440000} { status="okay"; };
 &{/soc@0/remoteproc@17300000} { status="disabled"; };
 &{/soc@0/watchdog@17c10000} { status="disabled"; };
