@@ -1,0 +1,176 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] usb: typec: qcom-pmic: wake on CC and attach interrupts
+
+On a DBY-W09 using PM8150B, plugging a PD supply during system sleep wakes
+through the charger's USBIN interrupt, but TCPM can remain SNK_UNATTACHED
+without a partner until the cable is replugged while awake. The Type-C
+port requests ordinary interrupts without system wake support. Losing the
+initial CC/attach event during suspend is suspected, not yet proven.
+
+Enable device wakeup by default and arm only CC state and attach/detach
+interrupts for system sleep, following the TCPci suspend/resume pattern.
+Track successful wake enables, unwind them on error, and balance them on
+resume and devres cleanup. Report disable failures and retain their state
+so that later cleanup can retry without adding another wake reference.
+
+Keep ISR, debounce, TCPM and PD PHY behavior unchanged. Do not arm VBUS or
+other Type-C/PD PHY interrupts, or inject a CC event on resume. Detach may
+also wake the system. This is an offline-tested candidate; the observed
+PD insertion failure still requires device validation.
+
+Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
+---
+--- a/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec.c
++++ b/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec.c
+@@ -155,6 +155,7 @@
+ 	.driver = {
+ 		.name = "qcom,pmic-typec",
+ 		.of_match_table = qcom_pmic_typec_table,
++		.pm = pm_sleep_ptr(&qcom_pmic_typec_port_pm_ops),
+ 	},
+ 	.probe = qcom_pmic_typec_probe,
+ 	.remove = qcom_pmic_typec_remove,
+--- a/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec_port.c
++++ b/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec_port.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_wakeup.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/slab.h>
+@@ -171,6 +172,7 @@
+ 	u32				base;
+ 	unsigned int			nr_irqs;
+ 	struct pmic_typec_port_irq_data	*irq_data;
++	unsigned long			wake_irqs;
+
+ 	struct regulator		*vdd_vbus;
+ 	bool				vbus_enabled;
+@@ -700,6 +702,98 @@
+ 	disable_delayed_work_sync(&pmic_typec_port->cc_debounce_dwork);
+ }
+
++static int qcom_pmic_typec_port_clear_wake(struct pmic_typec_port *port)
++{
++	int i, ret, error = 0;
++
++	for (i = port->nr_irqs - 1; i >= 0; i--) {
++		if (!(port->wake_irqs & BIT(i)))
++			continue;
++
++		ret = disable_irq_wake(port->irq_data[i].irq);
++		if (ret) {
++			dev_err(port->dev, "Failed to disable IRQ %d wake: %d\n",
++				port->irq_data[i].irq, ret);
++			if (!error)
++				error = ret;
++		} else {
++			port->wake_irqs &= ~BIT(i);
++		}
++	}
++
++	return error;
++}
++
++static int qcom_pmic_typec_port_suspend(struct device *dev)
++{
++	struct pmic_typec *tcpm = dev_get_drvdata(dev);
++	struct pmic_typec_port *port = tcpm->pmic_typec_port;
++	struct pmic_typec_port_irq_data *irq_data;
++	unsigned int i;
++	int ret;
++
++	if (!device_may_wakeup(dev))
++		return 0;
++
++	for (i = 0; i < port->nr_irqs; i++) {
++		irq_data = &port->irq_data[i];
++		if (irq_data->virq != PMIC_TYPEC_CC_STATE_IRQ &&
++		    irq_data->virq != PMIC_TYPEC_ATTACH_DETACH_IRQ)
++			continue;
++		if (port->wake_irqs & BIT(i))
++			continue;
++
++		ret = enable_irq_wake(irq_data->irq);
++		if (ret) {
++			dev_err(dev, "Failed to enable IRQ %d wake: %d\n",
++				irq_data->irq, ret);
++			qcom_pmic_typec_port_clear_wake(port);
++			return ret;
++		}
++		port->wake_irqs |= BIT(i);
++	}
++
++	return 0;
++}
++
++static int qcom_pmic_typec_port_resume(struct device *dev)
++{
++	struct pmic_typec *tcpm = dev_get_drvdata(dev);
++	struct pmic_typec_port *port = tcpm->pmic_typec_port;
++
++	/* Balance armed IRQs even if wakeup policy changed during the cycle. */
++	if (!device_may_wakeup(dev) && !port->wake_irqs)
++		return 0;
++
++	return qcom_pmic_typec_port_clear_wake(port);
++}
++
++DEFINE_SIMPLE_DEV_PM_OPS(qcom_pmic_typec_port_pm_ops,
++			qcom_pmic_typec_port_suspend,
++			qcom_pmic_typec_port_resume);
++
++static void qcom_pmic_typec_port_wakeup_cleanup(void *data)
++{
++	struct pmic_typec_port *port = data;
++
++	qcom_pmic_typec_port_clear_wake(port);
++	device_init_wakeup(port->dev, false);
++}
++
++static int qcom_pmic_typec_port_init_wakeup(struct pmic_typec_port *port)
++{
++	int ret;
++
++	ret = device_init_wakeup(port->dev, true);
++	if (ret) {
++		device_init_wakeup(port->dev, false);
++		return ret;
++	}
++
++	return devm_add_action_or_reset(port->dev,
++					qcom_pmic_typec_port_wakeup_cleanup, port);
++}
++
+ int qcom_pmic_typec_port_probe(struct platform_device *pdev,
+ 			       struct pmic_typec *tcpm,
+ 			       const struct pmic_typec_port_resources *res,
+@@ -781,7 +875,7 @@
+ 	tcpm->port_start = qcom_pmic_typec_port_start;
+ 	tcpm->port_stop = qcom_pmic_typec_port_stop;
+
+-	return 0;
++	return qcom_pmic_typec_port_init_wakeup(pmic_typec_port);
+ }
+
+ const struct pmic_typec_port_resources pm8150b_port_res = {
+--- a/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec_port.h
++++ b/drivers/usb/typec/tcpm/qcom/qcom_pmic_typec_port.h
+@@ -7,6 +7,7 @@
+ #define __QCOM_PMIC_TYPEC_PORT_H__
+
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/usb/tcpm.h>
+
+ /* Resources */
+@@ -25,6 +26,7 @@
+ /* API */
+
+ extern const struct pmic_typec_port_resources pm8150b_port_res;
++extern const struct dev_pm_ops qcom_pmic_typec_port_pm_ops;
+
+ int qcom_pmic_typec_port_probe(struct platform_device *pdev,
+ 			       struct pmic_typec *tcpm,
