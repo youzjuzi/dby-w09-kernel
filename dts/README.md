@@ -4,7 +4,7 @@
 
 本目录提供整理后的 `sm8250-huawei-dby-w09.dts`：基于 Linux 7.2.10 的标准 SM8250/PM8150 include，合并本项目历史板级修改及 USB 片段。它不再引用项目内部实验目录，也不是发布整棵反编译树。源码仍按历史功能层组织，尚未整理成可提交上游的最小板级文件。来源及离线比对见[provenance.md](provenance.md)。
 
-PON 使用主线重启模式：Linux `reboot recovery` 预期进入 Recovery 中的 U-Boot 菜单，`reboot bootloader` 预期进入 fastboot；两者及“回鸿蒙”是否回环均待实机验证（U）。普通重启不清除原因寄存器，桌面默认重启行为未改。Upstream PON reboot modes request the recovery-resident U-Boot menu (`reboot recovery`) or fastboot (`reboot bootloader`); bootloader handling and return-to-HarmonyOS loop behavior remain unverified (U). Normal reboot does not clear the reason register; desktop reboot defaults are unchanged.
+PON 重启模式配合补丁 0015：Linux 普通重启（包括桌面“重启”和无参数 `reboot`）与 `reboot recovery` 预期进入 Recovery 中的 U-Boot 菜单，`reboot bootloader` 预期进入 fastboot；关机和 halt 不写重启模式寄存器。本组合及“回鸿蒙”是否回环待实机验证（U）。With patch 0015, PON reboot modes request the recovery-resident U-Boot menu for normal reboot and `reboot recovery`, or fastboot for `reboot bootloader`. Power-off and halt do not write the reboot mode register. This combination and return-to-HarmonyOS loop behavior remain pending device validation (U).
 
 **私有输入仍必需：** `dby-memory-private.dtsi` 由所有者从自己的原厂运行时 FDT 生成，不随仓库提供。板级源码不包含蓝牙地址。面板驱动的私有命令表是另一项输入，见[面板教程](../docs/panel-data.md)。
 

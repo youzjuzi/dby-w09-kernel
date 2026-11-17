@@ -1,0 +1,31 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] power: reset: reboot-mode: only write modes on restart
+
+The reboot notifier chain is also called for halt and power-off, with a
+NULL command. The reboot-mode notifier interprets that command as the
+normal mode and writes its magic even though no restart was requested.
+
+Writing a reboot reason on shutdown is unnecessary. On boards mapping
+normal mode to recovery, it also causes the next power-on after shutdown
+to enter recovery instead of the normal boot path.
+
+Only handle SYS_RESTART so that halt and power-off leave the reboot mode
+untouched. Keep command lookup and explicit restart modes unchanged.
+
+Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
+---
+ drivers/power/reset/reboot-mode.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/power/reset/reboot-mode.c
++++ b/drivers/power/reset/reboot-mode.c
+@@ -107,6 +107,9 @@ static int reboot_mode_notify(struct notifier_block *this,
+ 	struct reboot_mode_driver *reboot;
+ 	unsigned int magic;
+
++	if (mode != SYS_RESTART)
++		return NOTIFY_DONE;
++
+ 	reboot = container_of(this, struct reboot_mode_driver, reboot_notifier);
+ 	magic = get_reboot_mode_magic(reboot, cmd);
+ 	if (magic)

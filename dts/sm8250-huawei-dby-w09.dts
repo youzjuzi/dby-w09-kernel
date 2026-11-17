@@ -407,6 +407,7 @@ wifi_s8c: smps8 { regulator-name="wifi-s8c"; regulator-min-microvolt=<1344000>; 
  status = "okay";
  mode-bootloader = <0x2>;
  mode-recovery = <0x1>;
+ mode-normal = <0x1>;
 };
 &pon_pwrkey { status = "okay"; };
 &pon_resin { status = "okay"; linux,code = <KEY_VOLUMEDOWN>; };

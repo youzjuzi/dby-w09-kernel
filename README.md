@@ -2,7 +2,7 @@
 
 R4 (2026-11-15): the maintainer passed a fresh installation from a blank **16 GB card** following the public documentation, with bundle **`20261115-1`** (**H + R**: Claude’s SSH checks and the user’s observations, supplied in the maintainer report). See the [fresh-install results and checklist](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md). Independent third-party reproduction remains **U**. Existing private inputs were reused; extraction was not repeated and retains its prior evidence level. The existing Recovery/U-Boot was retained, without rebuilding or reflashing; preserve the previous working card for rollback.
 
-Current source scope: fourteen patches plus board integration. Device evidence is limited to one tablet; audio, charging, power-key/cover and Venus results and unresolved defects are in the [hub status](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). An unlocked bootloader and replacement Recovery are required; an incorrect image can leave the device unbootable. **The installation workflow has not been independently validated by a third party starting from a blank card. Feedback is welcome.**
+Current source scope: fifteen patches plus board integration. Device evidence is limited to one tablet; audio, charging, power-key/cover and Venus results and unresolved defects are in the [hub status](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md). An unlocked bootloader and replacement Recovery are required; an incorrect image can leave the device unbootable. **The installation workflow has not been independently validated by a third party starting from a blank card. Feedback is welcome.**
 
 Fourteen patches, configuration and board source for Linux 7.2.10 on the Huawei MatePad 11 (DBY-W09, Snapdragon 865 / SM8250). Full upstream sources and owner-specific data are supplied separately.
 
@@ -44,7 +44,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 14
+test "$#" -eq 15
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -61,7 +61,7 @@ The archive is pinned to SHA-256 `2feaa70453e91f541be6a5c9078d8168e081af45a3d971
 
 ## Recorded outputs (O)
 
-These are the historical six-patch baseline hashes, not expected hashes for the current fourteen-patch configuration, audio, Hall/timer or Venus board additions.
+These are the historical six-patch baseline hashes, not expected hashes for the current fifteen-patch configuration, audio, Hall/timer or Venus board additions.
 
 | Output | SHA-256 |
 |---|---|
