@@ -79,6 +79,13 @@ close does not wake). The `aosd`/`cxsd`/`ddr` counters stayed at zero, so only
 the CPU cluster reaches its deepest state; average power over 7.7 h of suspend
 was about 0.7 W (U, estimated from the fuel gauge).
 
+`CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT=y` forces pending `sync_state()` callbacks
+once `deferred_probe_timeout` (10 s after the last driver registration) expires,
+so intentionally blacklisted or unbound DT consumers such as Venus do not pin
+boot interconnect bandwidth and `rpmhpd` voltage floors indefinitely; `sdhc_2`
+carries board interconnect and OPP bandwidth votes beforehand (O). Device
+behavior and power impact remain unverified (U).
+
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
 
 | File under `$KERNEL_BUILD` | Purpose |

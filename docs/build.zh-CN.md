@@ -58,6 +58,8 @@ make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
 
 补丁按文件名顺序、零容差应用。`olddefconfig` 可能随工具链调整配置；保留最终 `.config`，与仓库配置比较并理解差异。不要通过忽略补丁错误或随意关闭功能让构建继续。配方未指定并行任务数；可按主机内存情况自行添加 `-jN`。
 
+`CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT=y` 在 `deferred_probe_timeout`（最后一次驱动注册后 10 s）到期后对仍未完成的提供者强制执行 `sync_state()`，避免特意保持手动加载的消费者（如 Venus）长期锁住开机互联带宽与 `rpmhpd` 电压投票；配合板级 DTS 为 `sdhc_2` 补齐的互联与 OPP 带宽投票使用（O）。实机表现与功耗变化待验证（U）。
+
 ## 3. 构建产物在哪里
 
 下列文件是在上一步成功后的预期输出，本次未生成：
