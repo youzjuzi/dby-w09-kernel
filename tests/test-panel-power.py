@@ -14,12 +14,12 @@ SOURCE = Path('drivers/gpu/drm/panel/panel-novatek-nt36523.c')
 BINDING = Path('Documentation/devicetree/bindings/display/panel/novatek,nt36523.yaml')
 
 
-def replay(work):
+def replay(work, numbers=('0001', '0002', '0003', '0011', '0013', '0014', '0018')):
     for name in (SOURCE, BINDING):
         dest = work / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(UPSTREAM / name, dest)
-    for number in ('0001', '0002', '0003', '0011', '0013', '0014'):
+    for number in numbers:
         patch = next((ROOT / 'patches').glob(number + '-*.patch'))
         result = subprocess.run(['patch', '--batch', '--fuzz=0', '-p1', '-d', str(work),
                                  '-i', str(patch)], capture_output=True, text=True, check=True)
@@ -410,7 +410,16 @@ int main(void) {
     def test_actual_functions(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
-            source = replay(work)
+            before_dir = work / 'before'
+            after_dir = work / 'after'
+            before_src = replay(before_dir, ('0001', '0002', '0003', '0011', '0013', '0014'))
+            source = replay(after_dir)
+            self.assertEqual(
+                re.sub(r'static int nt36523_power_on\(struct panel_info \*pinfo\)\n\{.*?\n\}',
+                       '<power_on>', before_src, count=1, flags=re.S),
+                re.sub(r'static int nt36523_power_on\(struct panel_info \*pinfo\)\n\{.*?\n\}',
+                       '<power_on>', source, count=1, flags=re.S),
+            )
             names = ['nt36523_full_power', 'nt36523_power_off', 'nt36523_power_on',
                      'nt36523_prepare_power', 'nt36523_prepare', 'nt36523_unprepare']
             functions = '\n'.join(re.search(r'static (?:int|bool) ' + name +
@@ -473,16 +482,20 @@ int main(void) {
  int legacy_fail[]={101,400,500,201};
  assert(n==ARRAY_SIZE(legacy_fail) && !memcmp(events,legacy_fail,sizeof(legacy_fail)));empty();
  p=setup(7);assert(nt36523_prepare(&p.panel)==0);
- int full[]={100,1001,101,1002,102,1002,103,1002,300,1005,203,1005,202,1010,201,200,1001,1100,
-             100,1001,101,1002,102,1002,103,1002,400,500};
+ int full[]={100,1001,101,1002,102,1002,103,1012,300,1005,203,1005,202,1010,201,200,1001,1100,
+             100,1001,101,1002,102,1002,103,1012,400,500};
  assert(n==ARRAY_SIZE(full) && !memcmp(events,full,sizeof(full)));
  assert(nt36523_unprepare(&p.panel)==0);empty();n=0;
  assert(nt36523_prepare(&p.panel)==0);
- int repeat[]={100,1001,101,1002,102,1002,103,1002,400,500};
+ int repeat[]={100,1001,101,1002,102,1002,103,1012,400,500};
  assert(n==ARRAY_SIZE(repeat) && !memcmp(events,repeat,sizeof(repeat)));
  assert(nt36523_unprepare(&p.panel)==0);empty();
  for(unsigned mask=1;mask<8;mask++) {
   p=setup(mask);assert(nt36523_prepare(&p.panel)==0);assert(p.boot_power_cycled);
+  assert(n>=4 && events[n-2]==400 && events[n-1]==500);
+  if(mask & 4) assert(events[n-4]==103 && events[n-3]==1012);
+  else if(mask & 2) assert(events[n-4]==102 && events[n-3]==1002);
+  else assert(events[n-4]==101 && events[n-3]==1002);
   assert(nt36523_unprepare(&p.panel)==0);empty();
   for(int rail=0;rail<4;rail++) {
    p=setup(mask);struct regulator *present[]={p.vci,p.vddio,p.vsp,p.vsn};

@@ -1,0 +1,32 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] drm/panel: nt36523: wait 12 ms after VSN for bias settle
+
+In nt36523_power_on(), full-power configurations enable the panel's
+optional rails in sequence (vci, vddio, vsp, vsn) before pulsing the
+reset GPIO. Currently the post-vsn settle delay is only 2 ms.
+
+On Huawei MatePad 11 (DBY-W09), the owner runtime-FDT power-on stage
+waits 2 ms after VSN enable followed by a 10 ms bias-settle stage before
+asserting reset (12 ms total after VSN). During rapid screen-off to
+screen-on toggles (down to ~160 ms), waiting only 2 ms left one wake
+attempt (~1.16%) tripping the dual ESD GPIOs until the ESD pipe reset
+recovered it.
+
+Extend the post-vsn settle entry in delay_ms[] from 2 ms to 12 ms while
+keeping vci, vddio, and vsp delays, reset pulses, LP11/HS ordering, and
+legacy single-rail vddio configurations unchanged.
+
+Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/panel/panel-novatek-nt36523.c
++++ b/drivers/gpu/drm/panel/panel-novatek-nt36523.c
+@@ -1510,7 +1510,8 @@
+ {
+ 	struct regulator *rails[] = { pinfo->vci, pinfo->vddio, pinfo->vsp, pinfo->vsn };
+ 	const char * const names[] = { "vci", "vddio", "vsp", "vsn" };
+-	const unsigned int delay_ms[] = { 1, 2, 2, 2 };
++	/* Stock power-on waits 2 ms + 10 ms bias settle after VSN before reset. */
++	const unsigned int delay_ms[] = { 1, 2, 2, 12 };
+ 	int i, ret;
+ 
+ 	/* A failed disable retains its reference; never acquire it twice. */

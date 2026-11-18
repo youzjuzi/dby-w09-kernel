@@ -222,5 +222,26 @@ Patch 0017 restores `DSI_7nm_PHY_CMN_CLK_CFG1_DSICLK_SEL(3)` in
 and timing unchanged. Host replay and C unit tests (`O`) verify `PHY0=0x33` and
 `PHY1=0x37` across five simulated reset/enable/disable cycles, standalone C-PHY
 boot without `restore_pll_state()`, D-PHY `DSICLK_SEL` preservation and invalid
-`usecase` rejection. Effect on on-device intermittent black screen and stripe
-rates remains Pending / U until tested on the tablet.
+`usecase` rejection. Device results (bundle `20261118-3`, `H` + `R`,
+2026-11-18): `PHY0 CLK_CFG1=0x33` and `PHY1 CLK_CFG1=0x37` held across all 86
+post-boot display wakes (30 at 120 Hz and 56 at 60 Hz, plus 1 ESD reset
+re-prepare); `0/52` ESD resets occurred in the initial 120/60 Hz run, and
+`1/86` (~1.16%) occurred under ultra-rapid off-to-wake smashing (at a 160 ms
+off-to-wake interval) and recovered cleanly in one ESD pipe reset (`ret=0`).
+
+
+## 0018 — post-VSN panel bias settle delay (DP9, offline)
+
+On the DBY-W09 panel, the owner runtime-FDT `lcd-kit,power-on-stage` sequence
+enables `VSN` (`2 ms`) and then waits an additional `10 ms` (`EVENT_BIAS`) —
+`12 ms` total after `VSN` assertion — before starting `EVENT_RESET`. Patch 0011
+waited only `2 ms` after enabling `vsn` before calling `nt36523_reset()`.
+
+Patch 0018 changes the `vsn` entry of `delay_ms[]` in `nt36523_power_on()` from
+`2` to `12` ms while leaving `vci` (`1 ms`), `vddio` (`2 ms`), `vsp` (`2 ms`),
+non-`vsn` combinations, reset pulse geometry, MIPI LP11/HS ordering and
+`nt36523_power_off()` untouched. Host replay (`0001..0018`) and C unit tests
+(`O`) confirm every other function in `panel-novatek-nt36523.c` is unchanged and
+verify `103 -> 1012 -> reset` across all `vsn`-equipped supply combinations.
+Effect on the residual rapid off-to-wake failure rate remains Pending / U until
+tested on the tablet stacked atop Patch 0017.
