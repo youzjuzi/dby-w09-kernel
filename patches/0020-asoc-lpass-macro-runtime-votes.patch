@@ -1,0 +1,380 @@
+From: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+Subject: [PATCH] ASoC: codecs: lpass: balance macro votes with runtime PM
+
+Balance macro and dcodec votes with the existing functional clocks.
+Hand the probe references to runtime PM, keep a reference during clock
+provider registration, unwind failed cache synchronization, and avoid
+double unprepare when removing a runtime-suspended device.
+
+VA supplies fsgen itself, so its runtime callback must not prepare its
+own exported clock. Retain the existing optional NPL handling.
+
+Signed-off-by: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+---
+--- a/sound/soc/codecs/lpass-rx-macro.c
++++ b/sound/soc/codecs/lpass-rx-macro.c
+@@ -3908,16 +3908,26 @@
+ 	pm_runtime_set_autosuspend_delay(dev, 3000);
+ 	pm_runtime_use_autosuspend(dev);
+ 	pm_runtime_mark_last_busy(dev);
+-	pm_runtime_set_active(dev);
++	ret = pm_runtime_set_active(dev);
++	if (ret)
++		goto err_clkout;
++	pm_runtime_get_noresume(dev);
+ 	pm_runtime_enable(dev);
+ 
+ 	ret = rx_macro_register_mclk_output(rx);
+ 	if (ret)
+-		goto err_clkout;
+-
++		goto err_pm;
++
++	pm_runtime_put_autosuspend(dev);
+ 	return 0;
+ 
++err_pm:
++	pm_runtime_disable(dev);
++	pm_runtime_put_noidle(dev);
++	pm_runtime_set_suspended(dev);
+ err_clkout:
++	regcache_cache_only(rx->regmap, true);
++	regcache_mark_dirty(rx->regmap);
+ 	clk_disable_unprepare(rx->fsgen);
+ err_fsgen:
+ 	clk_disable_unprepare(rx->npl);
+@@ -3931,15 +3941,16 @@
+ 	return ret;
+ }
+ 
++static int rx_macro_runtime_suspend(struct device *dev);
++
+ static void rx_macro_remove(struct platform_device *pdev)
+ {
+-	struct rx_macro *rx = dev_get_drvdata(&pdev->dev);
+-
+-	clk_disable_unprepare(rx->mclk);
+-	clk_disable_unprepare(rx->npl);
+-	clk_disable_unprepare(rx->fsgen);
+-	clk_disable_unprepare(rx->macro);
+-	clk_disable_unprepare(rx->dcodec);
++	struct device *dev = &pdev->dev;
++
++	pm_runtime_disable(dev);
++	if (!pm_runtime_status_suspended(dev))
++		rx_macro_runtime_suspend(dev);
++	pm_runtime_set_suspended(dev);
+ }
+ 
+ static const struct of_device_id rx_macro_dt_match[] = {
+@@ -3976,6 +3987,8 @@
+ 	clk_disable_unprepare(rx->fsgen);
+ 	clk_disable_unprepare(rx->npl);
+ 	clk_disable_unprepare(rx->mclk);
++	clk_disable_unprepare(rx->dcodec);
++	clk_disable_unprepare(rx->macro);
+ 
+ 	return 0;
+ }
+@@ -3984,11 +3997,19 @@
+ {
+ 	struct rx_macro *rx = dev_get_drvdata(dev);
+ 	int ret;
++
++	ret = clk_prepare_enable(rx->macro);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(rx->dcodec);
++	if (ret)
++		goto err_dcodec;
+ 
+ 	ret = clk_prepare_enable(rx->mclk);
+ 	if (ret) {
+ 		dev_err(dev, "unable to prepare mclk\n");
+-		return ret;
++		goto err_mclk;
+ 	}
+ 
+ 	ret = clk_prepare_enable(rx->npl);
+@@ -4003,13 +4024,23 @@
+ 		goto err_fsgen;
+ 	}
+ 	regcache_cache_only(rx->regmap, false);
+-	regcache_sync(rx->regmap);
++	ret = regcache_sync(rx->regmap);
++	if (ret)
++		goto err_sync;
+ 
+ 	return 0;
++err_sync:
++	regcache_cache_only(rx->regmap, true);
++	regcache_mark_dirty(rx->regmap);
++	clk_disable_unprepare(rx->fsgen);
+ err_fsgen:
+ 	clk_disable_unprepare(rx->npl);
+ err_npl:
+ 	clk_disable_unprepare(rx->mclk);
++err_mclk:
++	clk_disable_unprepare(rx->dcodec);
++err_dcodec:
++	clk_disable_unprepare(rx->macro);
+ 
+ 	return ret;
+ }
+--- a/sound/soc/codecs/lpass-tx-macro.c
++++ b/sound/soc/codecs/lpass-tx-macro.c
+@@ -2361,16 +2361,26 @@
+ 	pm_runtime_set_autosuspend_delay(dev, 3000);
+ 	pm_runtime_use_autosuspend(dev);
+ 	pm_runtime_mark_last_busy(dev);
+-	pm_runtime_set_active(dev);
++	ret = pm_runtime_set_active(dev);
++	if (ret)
++		goto err_clkout;
++	pm_runtime_get_noresume(dev);
+ 	pm_runtime_enable(dev);
+ 
+ 	ret = tx_macro_register_mclk_output(tx);
+ 	if (ret)
+-		goto err_clkout;
+-
++		goto err_pm;
++
++	pm_runtime_put_autosuspend(dev);
+ 	return 0;
+ 
++err_pm:
++	pm_runtime_disable(dev);
++	pm_runtime_put_noidle(dev);
++	pm_runtime_set_suspended(dev);
+ err_clkout:
++	regcache_cache_only(tx->regmap, true);
++	regcache_mark_dirty(tx->regmap);
+ 	clk_disable_unprepare(tx->fsgen);
+ err_fsgen:
+ 	clk_disable_unprepare(tx->npl);
+@@ -2386,15 +2396,17 @@
+ 	return ret;
+ }
+ 
++static int tx_macro_runtime_suspend(struct device *dev);
++
+ static void tx_macro_remove(struct platform_device *pdev)
+ {
+-	struct tx_macro *tx = dev_get_drvdata(&pdev->dev);
+-
+-	clk_disable_unprepare(tx->macro);
+-	clk_disable_unprepare(tx->dcodec);
+-	clk_disable_unprepare(tx->mclk);
+-	clk_disable_unprepare(tx->npl);
+-	clk_disable_unprepare(tx->fsgen);
++	struct device *dev = &pdev->dev;
++	struct tx_macro *tx = dev_get_drvdata(dev);
++
++	pm_runtime_disable(dev);
++	if (!pm_runtime_status_suspended(dev))
++		tx_macro_runtime_suspend(dev);
++	pm_runtime_set_suspended(dev);
+ 
+ 	lpass_macro_pds_exit(tx->pds);
+ }
+@@ -2409,6 +2421,8 @@
+ 	clk_disable_unprepare(tx->fsgen);
+ 	clk_disable_unprepare(tx->npl);
+ 	clk_disable_unprepare(tx->mclk);
++	clk_disable_unprepare(tx->dcodec);
++	clk_disable_unprepare(tx->macro);
+ 
+ 	return 0;
+ }
+@@ -2417,11 +2431,19 @@
+ {
+ 	struct tx_macro *tx = dev_get_drvdata(dev);
+ 	int ret;
++
++	ret = clk_prepare_enable(tx->macro);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(tx->dcodec);
++	if (ret)
++		goto err_dcodec;
+ 
+ 	ret = clk_prepare_enable(tx->mclk);
+ 	if (ret) {
+ 		dev_err(dev, "unable to prepare mclk\n");
+-		return ret;
++		goto err_mclk;
+ 	}
+ 
+ 	ret = clk_prepare_enable(tx->npl);
+@@ -2437,13 +2459,23 @@
+ 	}
+ 
+ 	regcache_cache_only(tx->regmap, false);
+-	regcache_sync(tx->regmap);
++	ret = regcache_sync(tx->regmap);
++	if (ret)
++		goto err_sync;
+ 
+ 	return 0;
++err_sync:
++	regcache_cache_only(tx->regmap, true);
++	regcache_mark_dirty(tx->regmap);
++	clk_disable_unprepare(tx->fsgen);
+ err_fsgen:
+ 	clk_disable_unprepare(tx->npl);
+ err_npl:
+ 	clk_disable_unprepare(tx->mclk);
++err_mclk:
++	clk_disable_unprepare(tx->dcodec);
++err_dcodec:
++	clk_disable_unprepare(tx->macro);
+ 
+ 	return ret;
+ }
+--- a/sound/soc/codecs/lpass-va-macro.c
++++ b/sound/soc/codecs/lpass-va-macro.c
+@@ -1669,22 +1669,32 @@
+ 	pm_runtime_set_autosuspend_delay(dev, 3000);
+ 	pm_runtime_use_autosuspend(dev);
+ 	pm_runtime_mark_last_busy(dev);
+-	pm_runtime_set_active(dev);
++	ret = pm_runtime_set_active(dev);
++	if (ret)
++		goto err_clkout;
++	pm_runtime_get_noresume(dev);
+ 	pm_runtime_enable(dev);
+ 
+ 	ret = va_macro_register_fsgen_output(va);
+ 	if (ret)
+-		goto err_clkout;
++		goto err_pm;
+ 
+ 	va->fsgen = devm_clk_hw_get_clk(dev, &va->hw, "fsgen");
+ 	if (IS_ERR(va->fsgen)) {
+ 		ret = PTR_ERR(va->fsgen);
+-		goto err_clkout;
+-	}
+-
++		goto err_pm;
++	}
++
++	pm_runtime_put_autosuspend(dev);
+ 	return 0;
+ 
++err_pm:
++	pm_runtime_disable(dev);
++	pm_runtime_put_noidle(dev);
++	pm_runtime_set_suspended(dev);
+ err_clkout:
++	regcache_cache_only(va->regmap, true);
++	regcache_mark_dirty(va->regmap);
+ 	if (va->has_npl_clk)
+ 		clk_disable_unprepare(va->npl);
+ err_npl:
+@@ -1699,9 +1709,27 @@
+ 	return ret;
+ }
+ 
++static int va_macro_runtime_suspend(struct device *dev);
++
+ static void va_macro_remove(struct platform_device *pdev)
+ {
+-	struct va_macro *va = dev_get_drvdata(&pdev->dev);
++	struct device *dev = &pdev->dev;
++	struct va_macro *va = dev_get_drvdata(dev);
++
++	pm_runtime_disable(dev);
++	if (!pm_runtime_status_suspended(dev))
++		va_macro_runtime_suspend(dev);
++	pm_runtime_set_suspended(dev);
++
++	lpass_macro_pds_exit(va->pds);
++}
++
++static int va_macro_runtime_suspend(struct device *dev)
++{
++	struct va_macro *va = dev_get_drvdata(dev);
++
++	regcache_cache_only(va->regmap, true);
++	regcache_mark_dirty(va->regmap);
+ 
+ 	if (va->has_npl_clk)
+ 		clk_disable_unprepare(va->npl);
+@@ -1710,21 +1738,6 @@
+ 	clk_disable_unprepare(va->dcodec);
+ 	clk_disable_unprepare(va->macro);
+ 
+-	lpass_macro_pds_exit(va->pds);
+-}
+-
+-static int va_macro_runtime_suspend(struct device *dev)
+-{
+-	struct va_macro *va = dev_get_drvdata(dev);
+-
+-	regcache_cache_only(va->regmap, true);
+-	regcache_mark_dirty(va->regmap);
+-
+-	if (va->has_npl_clk)
+-		clk_disable_unprepare(va->npl);
+-
+-	clk_disable_unprepare(va->mclk);
+-
+ 	return 0;
+ }
+ 
+@@ -1732,26 +1745,48 @@
+ {
+ 	struct va_macro *va = dev_get_drvdata(dev);
+ 	int ret;
++
++	ret = clk_prepare_enable(va->macro);
++	if (ret)
++		return ret;
++
++	ret = clk_prepare_enable(va->dcodec);
++	if (ret)
++		goto err_dcodec;
+ 
+ 	ret = clk_prepare_enable(va->mclk);
+ 	if (ret) {
+ 		dev_err(va->dev, "unable to prepare mclk\n");
+-		return ret;
++		goto err_mclk;
+ 	}
+ 
+ 	if (va->has_npl_clk) {
+ 		ret = clk_prepare_enable(va->npl);
+ 		if (ret) {
+-			clk_disable_unprepare(va->mclk);
+ 			dev_err(va->dev, "unable to prepare npl\n");
+-			return ret;
++			goto err_npl;
+ 		}
+ 	}
+ 
+ 	regcache_cache_only(va->regmap, false);
+-	regcache_sync(va->regmap);
++	ret = regcache_sync(va->regmap);
++	if (ret)
++		goto err_sync;
+ 
+ 	return 0;
++
++err_sync:
++	regcache_cache_only(va->regmap, true);
++	regcache_mark_dirty(va->regmap);
++	if (va->has_npl_clk)
++		clk_disable_unprepare(va->npl);
++err_npl:
++	clk_disable_unprepare(va->mclk);
++err_mclk:
++	clk_disable_unprepare(va->dcodec);
++err_dcodec:
++	clk_disable_unprepare(va->macro);
++	return ret;
+ }
+ 
+ 

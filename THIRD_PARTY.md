@@ -36,6 +36,8 @@ The target-file SPDX values below were read from the local upstream Linux 7.2.10
 
 | [0019](patches/0019-tty-serial-qcom-geni-active-only-suspend.patch) | `drivers/tty/serial/qcom_geni_serial.c` | `GPL-2.0` | Project extension of the upstream console ICC suspend policy to serdev ports; existing notices retained. |
 
+| [0020](patches/0020-asoc-lpass-macro-runtime-votes.patch) | `sound/soc/codecs/lpass-rx-macro.c`, `lpass-tx-macro.c`, `lpass-va-macro.c` | `GPL-2.0-only` | Project runtime clock-vote balancing and error cleanup using upstream PM/regmap APIs; no vendor code or data. |
+
 0005 has two distinct source chains: its PLL-count adaptation follows Neil Armstrong's upstream commit and subsequent revert linked above; its divider synchronization follows the downstream `dsi_pll_7nm.c` reference, whose GPL-2.0-only notice and archive-member identity were checked locally. The downstream download/release provenance remains unresolved. The target's literal `GPL-2.0` identifier is retained in this table rather than silently rewritten.
 
 [BSD-3-Clause-Clear](LICENSES/BSD-3-Clause-Clear.txt) is copied byte-for-byte, including metadata, from Linux 7.2.10's `LICENSES/preferred/BSD-3-Clause-Clear`. Existing [BSD-3-Clause.txt](LICENSES/BSD-3-Clause.txt) is a different licence and cannot replace it; the Clear text expressly grants no patent rights.
