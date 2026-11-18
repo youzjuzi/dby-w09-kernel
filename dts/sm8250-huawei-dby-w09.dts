@@ -1244,3 +1244,35 @@ dby_adsp_mem: &{/reserved-memory/pil_adsp_region@8a100000} { };
         vsn-supply = <&panel_vsn>;
     };
 };
+
+/* System SD card (sdhc_2) interconnect paths and OPP bandwidths from the
+ * owner stock runtime-FDT 4-bit SD bus vectors (decimal kBps); prepare for
+ * sync_state without copying raw stock DT blocks.
+ */
+&sdhc_2 {
+	interconnects = <&aggre2_noc MASTER_SDCC_2 0 &mc_virt SLAVE_EBI_CH0 0>,
+			<&gem_noc MASTER_AMPSS_M0 0 &config_noc SLAVE_SDCC_2 0>;
+	interconnect-names = "sdhc-ddr", "cpu-sdhc";
+};
+
+&sdhc2_opp_table {
+	opp-19200000 {
+		opp-peak-kBps = <80000 80000>;
+		opp-avg-kBps = <52286 80000>;
+	};
+
+	opp-50000000 {
+		opp-peak-kBps = <100000 100000>;
+		opp-avg-kBps = <65360 100000>;
+	};
+
+	opp-100000000 {
+		opp-peak-kBps = <200000 133320>;
+		opp-avg-kBps = <130718 133320>;
+	};
+
+	opp-202000000 {
+		opp-peak-kBps = <200000 150000>;
+		opp-avg-kBps = <261438 150000>;
+	};
+};

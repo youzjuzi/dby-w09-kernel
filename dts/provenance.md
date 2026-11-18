@@ -127,3 +127,14 @@ or bias override is added; inherited bias is retained. Both-high plus a 1000 ms
 IRQ debounce follows the previous watchdog and reported enable transients;
 IRQ-based recovery was exercised on one tablet on 2026-11-16 (H + R): no false
 resets in about 450 alarm edges, four successful resets; see `docs/patch-notes.md`.
+
+
+The `sdhc_2` interconnect endpoints (`aggre2_noc MASTER_SDCC_2 -> mc_virt SLAVE_EBI_CH0`
+as `sdhc-ddr` and `gem_noc MASTER_AMPSS_M0 -> config_noc SLAVE_SDCC_2` as `cpu-sdhc`)
+follow the upstream Linux 7.2.10 `qcom,sdhci-msm` and SM8250 interconnect bindings.
+The four `sdhc2_opp_table` `opp-peak-kBps` / `opp-avg-kBps` pairs map the upstream
+19.2 / 50 / 100 / 202 MHz OPPs to the owner stock runtime-FDT `/soc/sdhci@8804000`
+4-bit SD bus-bandwidth cases for 20 / 25 / 50 / 100.75 MB/s, converted from bytes/s
+to decimal kBps (`/ 1000`, matching `icc-rpmh` `vote_scale = 1000` and upstream
+Qualcomm `sdhci-msm` OPP tables). Raw stock bus-vector tables are not copied into
+this repository; device validation remains U.
