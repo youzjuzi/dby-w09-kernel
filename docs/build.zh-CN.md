@@ -60,6 +60,8 @@ make -C "$KERNEL_SOURCE" O="$KERNEL_BUILD" \
 
 `CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT=y` 在 `deferred_probe_timeout`（最后一次驱动注册后 10 s）到期后对仍未完成的提供者强制执行 `sync_state()`，避免特意保持手动加载的消费者（如 Venus）长期锁住开机互联带宽与 `rpmhpd` 电压投票；配合板级 DTS 为 `sdhc_2` 补齐的互联与 OPP 带宽投票使用（O）。实机表现与功耗变化待验证（U）。
 
+SL2c 将八个 CPU 的 `cpu-ddr` 路径设为 `QCOM_ICC_TAG_ACTIVE_ONLY`，只保留 AMC/WAKE 带宽投票、排除 RPMh SLEEP 集，原 L3 路径保持不变；实现证据为 O，实机行为与功耗待验证（Pending）。
+
 ## 3. 构建产物在哪里
 
 下列文件是在上一步成功后的预期输出，本次未生成：
