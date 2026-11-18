@@ -201,7 +201,7 @@ SNK_READY with a 9 V/3 A contract in 3 of 3 attempts; removal during sleep
 woke the system and left the port unattached.
 
 
-## 0017 — 7nm DSI C-PHY DSICLK_SEL restore across PHY reset (DP8, offline)
+## 0017 — 7nm DSI C-PHY DSICLK_SEL restore across PHY reset (DP8; O, device results H + R, 2026-11-18)
 
 In C-PHY mode, upstream `pll_7nm_register()` writes
 `CMN_CLK_CFG1.DSICLK_SEL = 3` (`pll_post_out_div`, 2/7 factor) once at probe and
@@ -230,7 +230,7 @@ re-prepare); `0/52` ESD resets occurred in the initial 120/60 Hz run, and
 off-to-wake interval) and recovered cleanly in one ESD pipe reset (`ret=0`).
 
 
-## 0018 — post-VSN panel bias settle delay (DP9, offline)
+## 0018 — post-VSN panel bias settle delay (DP9; O, device results H + R, 2026-11-18)
 
 On the DBY-W09 panel, the owner runtime-FDT `lcd-kit,power-on-stage` sequence
 enables `VSN` (`2 ms`) and then waits an additional `10 ms` (`EVENT_BIAS`) —
@@ -243,5 +243,9 @@ non-`vsn` combinations, reset pulse geometry, MIPI LP11/HS ordering and
 `nt36523_power_off()` untouched. Host replay (`0001..0018`) and C unit tests
 (`O`) confirm every other function in `panel-novatek-nt36523.c` is unchanged and
 verify `103 -> 1012 -> reset` across all `vsn`-equipped supply combinations.
-Effect on the residual rapid off-to-wake failure rate remains Pending / U until
-tested on the tablet stacked atop Patch 0017.
+Device results (bundle `20261118-5`, `H` + `R`, 2026-11-18, stacked atop Patch
+0017): across 46 post-boot display wakes and mode switches (25 at 60 Hz and 21
+at 120 Hz, including 38 ultra-rapid off-to-wake intervals of 13.0–67.9 ms and a
+291 s idle screen-off wake), `0/46` ESD resets occurred, `PHY0=0x33` and
+`PHY1=0x37` held across all 48 PHY resets, and all 16 post-boot touch reloads
+reported `d18=a3`. Multi-day long-term stability remains U.
