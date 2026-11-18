@@ -1,0 +1,55 @@
+From: DBY-W09 contributors <contributors@users.noreply.github.com>
+Subject: [PATCH] drm/msm/dsi: restore 7nm C-PHY DSICLK_SEL across PHY reset
+
+In C-PHY mode, pll_7nm_register() sets CMN_CLK_CFG1.DSICLK_SEL to 3
+(pll_post_out_div, 2/7 factor) once during probe and registers no CCF
+pclk_mux clock. However, msm_dsi_host_reset_phy() resets CMN_CLK_CFG1 to
+0 on every PHY enable, and msm_dsi_phy_enable() skips
+msm_dsi_phy_pll_restore_state() when phy->usecase is MSM_DSI_PHY_SLAVE.
+
+On bonded dual-DSI C-PHY panels such as the Huawei DBY-W09 NT36523, this
+leaves the master PHY0 with CMN_CLK_CFG1 = 0x33 (DSICLK_SEL = 3) while
+the slave PHY1 comes up with CMN_CLK_CFG1 = 0x34 (BITCLK_SEL = 1,
+DSICLK_SEL = 0) on every display enable.
+
+Program DSICLK_SEL = 3 alongside BITCLK_SEL in dsi_7nm_set_usecase()
+whenever phy->cphy_mode is set so both standalone/master and bonded
+slave 7nm C-PHY links retain the C-PHY post-divider mux after reset,
+leaving D-PHY configurations unchanged.
+
+Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
+---
+--- a/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
++++ b/drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c
+@@ -702,7 +702,9 @@
+ {
+ 	struct dsi_pll_7nm *pll_7nm = to_pll_7nm(phy->vco_hw);
+ 	void __iomem *base = phy->base;
++	u32 mask = DSI_7nm_PHY_CMN_CLK_CFG1_BITCLK_SEL__MASK;
+ 	u32 data = 0x0;	/* internal PLL */
++	u32 clk_cfg1;
+ 
+ 	DBG("DSI PLL%d", pll_7nm->phy->id);
+ 
+@@ -722,9 +724,19 @@
+ 		return -EINVAL;
+ 	}
+ 
++	clk_cfg1 = DSI_7nm_PHY_CMN_CLK_CFG1_BITCLK_SEL(data);
++	/*
++	 * pll_7nm_register() configures DSICLK_SEL=3 once at probe in C-PHY
++	 * mode and registers no mux clock, but msm_dsi_host_reset_phy() clears
++	 * CMN_CLK_CFG1 on every enable and slave PHYs skip restore_pll_state().
++	 */
++	if (phy->cphy_mode) {
++		mask |= DSI_7nm_PHY_CMN_CLK_CFG1_DSICLK_SEL__MASK;
++		clk_cfg1 |= DSI_7nm_PHY_CMN_CLK_CFG1_DSICLK_SEL(3);
++	}
++
+ 	/* set PLL src */
+-	dsi_pll_cmn_clk_cfg1_update(pll_7nm, DSI_7nm_PHY_CMN_CLK_CFG1_BITCLK_SEL__MASK,
+-				    DSI_7nm_PHY_CMN_CLK_CFG1_BITCLK_SEL(data));
++	dsi_pll_cmn_clk_cfg1_update(pll_7nm, mask, clk_cfg1);
+ 
+ 	return 0;
+ }

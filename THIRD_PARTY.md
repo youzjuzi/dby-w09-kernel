@@ -31,6 +31,7 @@ The target-file SPDX values below were read from the local upstream Linux 7.2.10
 | [0010](patches/0010-asoc-qcom-sm8250-add-primary-tdm-rx0-support.patch) | `sound/soc/qcom/sm8250.c` | `GPL-2.0` | Project Primary TDM startup, shutdown, slot and channel-map support after 0008. |
 
 | [0016](patches/0016-usb-typec-qcom-pmic-typec-wake-on-attach.patch) | `drivers/usb/typec/tcpm/qcom/qcom_pmic_typec.c`, `qcom_pmic_typec_port.c`, `qcom_pmic_typec_port.h` | `GPL-2.0` | Project system wake support following the local upstream TCPci pattern; original notices retained. |
+| [0017](patches/0017-drm-msm-dsi-phy-7nm-cphy-dsiclk-sel.patch) | `drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c` | `GPL-2.0` | Preserve literal legacy SPDX; project fix from upstream `dsi_phy_7nm.c` and live hardware register readouts (no vendor code imported). |
 
 0005 has two distinct source chains: its PLL-count adaptation follows Neil Armstrong's upstream commit and subsequent revert linked above; its divider synchronization follows the downstream `dsi_pll_7nm.c` reference, whose GPL-2.0-only notice and archive-member identity were checked locally. The downstream download/release provenance remains unresolved. The target's literal `GPL-2.0` identifier is retained in this table rather than silently rewritten.
 

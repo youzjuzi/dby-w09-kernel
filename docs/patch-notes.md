@@ -199,3 +199,28 @@ wake-disabled policy, balanced cycles and cleanup failures. Device result
 charger during s2idle woke the system through `cc-state-change` and reached
 SNK_READY with a 9 V/3 A contract in 3 of 3 attempts; removal during sleep
 woke the system and left the port unattached.
+
+
+## 0017 — 7nm DSI C-PHY DSICLK_SEL restore across PHY reset (DP8, offline)
+
+In C-PHY mode, upstream `pll_7nm_register()` writes
+`CMN_CLK_CFG1.DSICLK_SEL = 3` (`pll_post_out_div`, 2/7 factor) once at probe and
+skips registering a `pclk_mux` clock. On every panel enable,
+`msm_dsi_host_reset_phy()` clears both PHY `CMN_CLK_CFG1` registers, and
+`msm_dsi_phy_enable()` skips `msm_dsi_phy_pll_restore_state()` on
+`MSM_DSI_PHY_SLAVE`.
+
+Read-only inspection on one live tablet (H, 2026-11-18) after screen off/on
+cycles showed `a8c000.i2c` (`i2c-11`) address `0x3e` (TI TPS65132) holding
+`0x00=0x11`, `0x01=0x11` (±5.7 V EEPROM intact), while active 7nm PHY common
+registers showed master `PHY0` (`0x0ae94400`) `CMN_CLK_CFG1=0x33`
+(`BITCLK_SEL=0, DSICLK_SEL=3`) and bonded slave `PHY1` (`0x0ae96400`)
+`CMN_CLK_CFG1=0x34` (`BITCLK_SEL=1, DSICLK_SEL=0`).
+
+Patch 0017 restores `DSI_7nm_PHY_CMN_CLK_CFG1_DSICLK_SEL(3)` in
+`dsi_7nm_set_usecase()` whenever `phy->cphy_mode` is set, leaving D-PHY masking
+and timing unchanged. Host replay and C unit tests (`O`) verify `PHY0=0x33` and
+`PHY1=0x37` across five simulated reset/enable/disable cycles, standalone C-PHY
+boot without `restore_pll_state()`, D-PHY `DSICLK_SEL` preservation and invalid
+`usecase` rejection. Effect on on-device intermittent black screen and stripe
+rates remains Pending / U until tested on the tablet.
