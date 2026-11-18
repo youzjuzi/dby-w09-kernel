@@ -72,9 +72,12 @@ controls such as `pm_test`, `pm_print_times` and `pm_wakeup_irq`. Automatic slee
 wakelocks and boot-time suspend testing remain disabled. `CONFIG_QCOM_STATS=m`
 is unchanged; the device pack now includes its module for OF autoload and
 read-only RPMh/SMEM sleep counters. SL1-fix1 removes the board's old disabled
-override for this node; hardware access and probe remain unverified.
-These are offline preparation changes and
-do not establish working suspend or wake sources (U).
+override for this node. Device result (H + R, one tablet, 2026-11-17/18):
+`qcom_stats` binds without bus errors; s2idle suspend and resume succeeded in
+every test (power key, lid open, USB insertion and removal as wake sources; lid
+close does not wake). The `aosd`/`cxsd`/`ddr` counters stayed at zero, so only
+the CPU cluster reaches its deepest state; average power over 7.7 h of suspend
+was about 0.7 W (U, estimated from the fuel gauge).
 
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
 

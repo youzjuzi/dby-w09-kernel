@@ -194,5 +194,8 @@ suspend is the working hypothesis. This revision also arms the VBUS IRQ.
 The candidate follows the local Linux 7.2.10 TCPci sleep/wake pattern with
 multi-IRQ rollback and checked `device_init_wakeup()` initialization. Host
 fault-injection tests cover all three allowed IRQs, partial setup, rollback,
-wake-disabled policy, balanced cycles and cleanup failures. Negotiation
-after insertion during sleep with VBUS wake remains unverified on hardware.
+wake-disabled policy, balanced cycles and cleanup failures. Device result
+(H, one tablet, 2026-11-18): with CC, attach and VBUS armed, inserting a PD
+charger during s2idle woke the system through `cc-state-change` and reached
+SNK_READY with a 9 V/3 A contract in 3 of 3 attempts; removal during sleep
+woke the system and left the port unattached.
