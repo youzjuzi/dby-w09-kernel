@@ -32,6 +32,7 @@ MOCK = r'''
 #include <string.h>
 #define BIT(n) (1UL << (n))
 #define PMIC_TYPEC_CC_STATE_IRQ 2
+#define PMIC_TYPEC_VBUS_IRQ 4
 #define PMIC_TYPEC_ATTACH_DETACH_IRQ 5
 #define DEFINE_SIMPLE_DEV_PM_OPS(name, suspend, resume)
 struct device { bool wake; void *data; };
@@ -65,7 +66,7 @@ static int devm_add_action_or_reset(struct device *d, void (*fn)(void *), void *
 static int enable_irq_wake(int irq)
 {
     int i = irq - 100;
-    assert(i == 1 || i == 4);
+    assert(i == 1 || i == 3 || i == 4);
     enables[i]++;
     if (i == fail_enable) return -22;
     assert(depth[i]++ == 0);
@@ -74,7 +75,7 @@ static int enable_irq_wake(int irq)
 static int disable_irq_wake(int irq)
 {
     int i = irq - 100;
-    assert(i == 1 || i == 4);
+    assert(i == 1 || i == 3 || i == 4);
     disables[i]++;
     if (i == fail_disable) return -5;
     assert(depth[i]-- == 1);
@@ -83,6 +84,7 @@ static int disable_irq_wake(int irq)
 '''
 
 HARNESS = r'''
+static const int wake_indexes[] = {1, 3, 4};
 static struct device dev;
 static struct pmic_typec_port_irq_data irqs[7];
 static struct pmic_typec_port port;
@@ -113,25 +115,27 @@ int main(void)
     for (int i = 0; i < 7; i++) assert(!enables[i]);
     for (int n = 0; n < 3; n++) {
         assert(!qcom_pmic_typec_port_suspend(&dev));
-        assert(port.wake_irqs == (BIT(1) | BIT(4)));
+        assert(port.wake_irqs == (BIT(1) | BIT(3) | BIT(4)));
         assert(!qcom_pmic_typec_port_suspend(&dev)); /* no double reference */
         assert(!qcom_pmic_typec_port_resume(&dev));
         assert(!qcom_pmic_typec_port_resume(&dev));
         empty();
     }
-    assert(enables[1] == 3 && enables[4] == 3);
-    assert(disables[1] == 3 && disables[4] == 3);
+    assert(enables[1] == 3 && enables[3] == 3 && enables[4] == 3);
+    assert(disables[1] == 3 && disables[3] == 3 && disables[4] == 3);
     dev.wake = false;
     assert(!qcom_pmic_typec_port_suspend(&dev));
     assert(!qcom_pmic_typec_port_resume(&dev));
-    assert(enables[1] == 3 && enables[4] == 3);
+    assert(enables[1] == 3 && enables[3] == 3 && enables[4] == 3);
     action(action_data); assert(!dev.wake); empty();
 
-    for (int i = 1; i <= 4; i += 3) {
+    for (int n = 0; n < 3; n++) {
+        int i = wake_indexes[n];
         reset(); dev.wake = true; fail_enable = i;
         assert(qcom_pmic_typec_port_suspend(&dev) == -22);
         assert(logs == 1); empty();
-        assert(disables[1] == (i == 4));
+        assert(disables[1] == (i > 1));
+        assert(disables[3] == (i > 3));
         assert(!disables[4]);
     }
     reset(); dev.wake = true; fail_enable = 4; fail_disable = 1;
@@ -142,13 +146,14 @@ int main(void)
     assert(enables[1] == 1); /* retained bit is not enabled twice */
     assert(!qcom_pmic_typec_port_resume(&dev)); empty();
 
-    for (int i = 1; i <= 4; i += 3) {
+    for (int n = 0; n < 3; n++) {
+        int i = wake_indexes[n];
         reset(); dev.wake = true;
         assert(!qcom_pmic_typec_port_suspend(&dev));
         fail_disable = i;
         assert(qcom_pmic_typec_port_resume(&dev) == -5);
         assert(port.wake_irqs == BIT(i) && logs == 1);
-        assert(disables[1] == 1 && disables[4] == 1);
+        assert(disables[1] == 1 && disables[3] == 1 && disables[4] == 1);
         fail_disable = -1;
         assert(!qcom_pmic_typec_port_resume(&dev)); empty();
     }

@@ -174,20 +174,25 @@ GNOME enumeration, actual scan rate, transitions, remembered modes, ESD recovery
 black-screen/stripe rates and long-term stability require owner device testing.
 
 
-## 0016 — Type-C CC/attach wake interrupts (SL1-fix2, offline)
+## 0016 — Type-C CC/attach/VBUS wake interrupts (SL1-fix3, offline)
 
-The QCOM PMIC Type-C port now defaults to wakeup enabled. System sleep arms
-only `cc-state-change` and `attach-detach`; resume balances successful enables.
-An enable failure aborts suspend and rolls back prior enables. Disable failures
-are reported, retain their armed bit and can be retried by resume/devres cleanup.
-Cleanup runs before the port IRQ resources are released. No ISR, debounce,
-TCPM state machine, PD PHY or register access is changed, and no CC event is
-injected on resume. Detach can wake as well as attach. VBUS wake remains the
-existing charger USBIN source; the Type-C VBUS IRQ is not armed here.
+The QCOM PMIC Type-C port defaults to wakeup enabled. System sleep arms
+only `cc-state-change`, `attach-detach` and `vbus-change`; resume balances
+successful enables. An enable failure aborts suspend and rolls back prior
+enables. Disable failures are reported, retain their armed bit and can be
+retried by resume/devres cleanup. Cleanup runs before the port IRQ resources
+are released. No ISR, debounce, TCPM state machine, PD PHY or register access
+is changed, and no events are injected on resume. Detach can wake as well as
+attach. The existing charger USBIN wake source is unchanged.
+
+With CC/attach wake alone, the reported device result was a successful CC
+wake followed by TOGGLING -> SNK_ATTACH_WAIT -> SNK_DEBOUNCED, then no PD;
+VBUS interrupt count remained zero, while replugging awake worked. A stale
+`vbus_present` can block sink attachment; losing the masked VBUS edge during
+suspend is the working hypothesis. This revision also arms the VBUS IRQ.
 
 The candidate follows the local Linux 7.2.10 TCPci sleep/wake pattern with
-multi-IRQ rollback and checked `device_init_wakeup()` initialization. A charger
-USBIN wake previously left TCPM without a partner after insertion during sleep;
-loss of the initial CC event is a hypothesis. Actual PD negotiation after this
-change remains unverified. Host fault-injection tests cover partial setup,
-rollback, wake-disabled policy, balanced cycles and cleanup failures.
+multi-IRQ rollback and checked `device_init_wakeup()` initialization. Host
+fault-injection tests cover all three allowed IRQs, partial setup, rollback,
+wake-disabled policy, balanced cycles and cleanup failures. Negotiation
+after insertion during sleep with VBUS wake remains unverified on hardware.

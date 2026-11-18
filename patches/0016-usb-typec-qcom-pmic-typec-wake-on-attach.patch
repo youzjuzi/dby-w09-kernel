@@ -1,22 +1,29 @@
 From: DBY-W09 contributors <contributors@users.noreply.github.com>
-Subject: [PATCH] usb: typec: qcom-pmic: wake on CC and attach interrupts
+Subject: [PATCH] usb: typec: qcom-pmic: wake on CC, attach and VBUS IRQs
 
-On a DBY-W09 using PM8150B, plugging a PD supply during system sleep wakes
-through the charger's USBIN interrupt, but TCPM can remain SNK_UNATTACHED
-without a partner until the cable is replugged while awake. The Type-C
-port requests ordinary interrupts without system wake support. Losing the
-initial CC/attach event during suspend is suspected, not yet proven.
+On a DBY-W09 using PM8150B, enabling CC and attach wake interrupts lets
+insertion during system sleep wake TCPM and advance from TOGGLING
+through SNK_ATTACH_WAIT to SNK_DEBOUNCED, but PD negotiation then
+stalls. The reported VBUS interrupt count is zero while CC, attach and
+charger USBIN interrupts fire. Replugging while awake negotiates PD
+normally.
 
-Enable device wakeup by default and arm only CC state and attach/detach
-interrupts for system sleep, following the TCPci suspend/resume pattern.
-Track successful wake enables, unwind them on error, and balance them on
-resume and devres cleanup. Report disable failures and retain their state
-so that later cleanup can retry without adding another wake reference.
+A stale vbus_present value blocks sink attachment. Losing the VBUS edge
+while its non-wakeup IRQ is masked during suspend is suspected, not
+proven. Arm VBUS alongside CC state and attach/detach to preserve this
+notification.
 
-Keep ISR, debounce, TCPM and PD PHY behavior unchanged. Do not arm VBUS or
-other Type-C/PD PHY interrupts, or inject a CC event on resume. Detach may
-also wake the system. This is an offline-tested candidate; the observed
-PD insertion failure still requires device validation.
+Enable device wakeup by default, following the TCPci suspend/resume
+pattern. Track successful wake enables, unwind them on error, and
+balance them on resume and devres cleanup. Report disable failures and
+retain their state so that later cleanup can retry without adding
+another wake reference.
+
+Keep ISR, debounce, TCPM and PD PHY behavior unchanged. Other Type-C/PD
+PHY interrupts remain ordinary IRQs. Do not inject events on resume.
+Detach may also wake the system. This is an offline-tested candidate; PD
+negotiation after insertion during sleep still requires device
+validation.
 
 Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
 ---
@@ -48,7 +55,7 @@ Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
 
  	struct regulator		*vdd_vbus;
  	bool				vbus_enabled;
-@@ -700,6 +702,98 @@
+@@ -700,6 +702,99 @@
  	disable_delayed_work_sync(&pmic_typec_port->cc_debounce_dwork);
  }
 
@@ -88,6 +95,7 @@ Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
 +	for (i = 0; i < port->nr_irqs; i++) {
 +		irq_data = &port->irq_data[i];
 +		if (irq_data->virq != PMIC_TYPEC_CC_STATE_IRQ &&
++		    irq_data->virq != PMIC_TYPEC_VBUS_IRQ &&
 +		    irq_data->virq != PMIC_TYPEC_ATTACH_DETACH_IRQ)
 +			continue;
 +		if (port->wake_irqs & BIT(i))
@@ -147,7 +155,7 @@ Signed-off-by: DBY-W09 contributors <contributors@users.noreply.github.com>
  int qcom_pmic_typec_port_probe(struct platform_device *pdev,
  			       struct pmic_typec *tcpm,
  			       const struct pmic_typec_port_resources *res,
-@@ -781,7 +875,7 @@
+@@ -781,7 +876,7 @@
  	tcpm->port_start = qcom_pmic_typec_port_start;
  	tcpm->port_stop = qcom_pmic_typec_port_stop;
 
