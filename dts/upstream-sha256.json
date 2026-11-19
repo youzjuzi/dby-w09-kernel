@@ -13,6 +13,7 @@
   "include/dt-bindings/iio/qcom,spmi-vadc.h": "de30a5f7f117824e1fc290c4b140f7ca36cbaea1b2bbb20eefd8bb5bd68846ed",
   "include/dt-bindings/input/input.h": "2f7ae2ec64f1b033e9c3d34d9128c0851f86cfffa010a890b46ac49aae4f17ea",
   "include/dt-bindings/input/linux-event-codes.h": "0aa175af6b02a096e7dc172bd31e81d499eba9083777515e8c20aa915ab79dec",
+  "include/dt-bindings/interconnect/qcom,icc.h": "8b60d3df840dc950875db2e505c39a2ffee17ac2edb3b87568f77c760da39ecb",
   "include/dt-bindings/interconnect/qcom,osm-l3.h": "c629c23fd20b52937adfde32d902d3cdd580e4edc63e7319c282e14ee0a01eb8",
   "include/dt-bindings/interconnect/qcom,sm8250.h": "cb00fd45ec40cdc25a05f25ee1bc18582c3d72869df2fb2e20459a0af3e6e846",
   "include/dt-bindings/interrupt-controller/arm-gic.h": "80dc56e8aa61b3681ee42fb0bfd34bf35ea2578ac6d82f1fa972b963667e8ff7",

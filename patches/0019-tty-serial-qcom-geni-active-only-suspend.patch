@@ -1,0 +1,45 @@
+From: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+Subject: [PATCH] tty: serial: qcom-geni: limit system-sleep votes to active state
+
+Serdev clients can keep the controller runtime-active while suspended.
+Apply the console ICC policy to all ports so those references cannot
+retain sleep-set bandwidth. Preserve active and wake bandwidth and
+restore the normal tag on resume. Protocol and wake IRQ handling stay
+with the existing serial and serdev drivers.
+
+Signed-off-by: DBY-W09 contributors <dby-w09@users.noreply.github.com>
+---
+--- a/drivers/tty/serial/qcom_geni_serial.c
++++ b/drivers/tty/serial/qcom_geni_serial.c
+@@ -1983,14 +1983,10 @@
+ 	struct uart_port *uport = &port->uport;
+ 	struct qcom_geni_private_data *private_data = uport->private_data;
+ 
+-	/*
+-	 * This is done so we can hit the lowest possible state in suspend
+-	 * even with no_console_suspend
+-	 */
+-	if (uart_console(uport)) {
+-		geni_icc_set_tag(&port->se, QCOM_ICC_TAG_ACTIVE_ONLY);
+-		geni_icc_set_bw(&port->se);
+-	}
++	/* Serdev ports may retain runtime PM references across system sleep. */
++	geni_icc_set_tag(&port->se, QCOM_ICC_TAG_ACTIVE_ONLY);
++	geni_icc_set_bw(&port->se);
++
+ 	return uart_suspend_port(private_data->drv, uport);
+ }
+ 
+@@ -2002,10 +1998,8 @@
+ 	struct qcom_geni_private_data *private_data = uport->private_data;
+ 
+ 	ret = uart_resume_port(private_data->drv, uport);
+-	if (uart_console(uport)) {
+-		geni_icc_set_tag(&port->se, QCOM_ICC_TAG_ALWAYS);
+-		geni_icc_set_bw(&port->se);
+-	}
++	geni_icc_set_tag(&port->se, QCOM_ICC_TAG_ALWAYS);
++	geni_icc_set_bw(&port->se);
+ 	return ret;
+ }
+ 

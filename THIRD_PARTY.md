@@ -34,6 +34,12 @@ The target-file SPDX values below were read from the local upstream Linux 7.2.10
 | [0017](patches/0017-drm-msm-dsi-phy-7nm-cphy-dsiclk-sel.patch) | `drivers/gpu/drm/msm/dsi/phy/dsi_phy_7nm.c` | `GPL-2.0` | Preserve literal legacy SPDX; project fix from upstream `dsi_phy_7nm.c` and live hardware register readouts (no vendor code imported). |
 | [0018](patches/0018-drm-panel-nt36523-dby-w09-vsn-bias-settle.patch) | `drivers/gpu/drm/panel/panel-novatek-nt36523.c` | `GPL-2.0-only` | Project power-on delay adjustment checked against owner runtime-FDT timing; existing notices retained, no vendor code imported. |
 
+| [0019](patches/0019-tty-serial-qcom-geni-active-only-suspend.patch) | `drivers/tty/serial/qcom_geni_serial.c` | `GPL-2.0` | Project extension of the upstream console ICC suspend policy to serdev ports; existing notices retained. |
+
+| [0020](patches/0020-asoc-lpass-macro-runtime-votes.patch) | `sound/soc/codecs/lpass-rx-macro.c`, `lpass-tx-macro.c`, `lpass-va-macro.c` | `GPL-2.0-only` | Project runtime clock-vote balancing and error cleanup using upstream PM/regmap APIs; no vendor code or data. |
+
+| [0021](patches/0021-asoc-q6afe-lpass-vote-handle.patch) | `sound/soc/qcom/qdsp6/q6afe.c` | `GPL-2.0` | Project response parsing, client-handle propagation and synchronous unvote using the existing APR transaction path; no vendor code or data imported. |
+
 0005 has two distinct source chains: its PLL-count adaptation follows Neil Armstrong's upstream commit and subsequent revert linked above; its divider synchronization follows the downstream `dsi_pll_7nm.c` reference, whose GPL-2.0-only notice and archive-member identity were checked locally. The downstream download/release provenance remains unresolved. The target's literal `GPL-2.0` identifier is retained in this table rather than silently rewritten.
 
 [BSD-3-Clause-Clear](LICENSES/BSD-3-Clause-Clear.txt) is copied byte-for-byte, including metadata, from Linux 7.2.10's `LICENSES/preferred/BSD-3-Clause-Clear`. Existing [BSD-3-Clause.txt](LICENSES/BSD-3-Clause.txt) is a different licence and cannot replace it; the Clear text expressly grants no patent rights.

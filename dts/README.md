@@ -142,3 +142,9 @@ regulator. The maintainer recorded three 300 ms pulses on one tablet on 2026-11-
 Idea from CoWave-Fall's linux-on-arm-matepad11; reimplemented, no code copied.
 
 R4 (2026-11-15) reuses the existing owner memory include and Bluetooth address without repeating extraction. The freshly compiled DTB matches the previous card bundle byte for byte (O). Subsequent maintainer installation from a blank 16 GB card following the public documentation passed with bundle `20261115-1` (H + R, supplied Claude SSH checks and user observations); this is separate from the offline comparison. Private extraction retains its prior evidence level, and independent third-party reproduction remains U.
+
+## 系统盘 SD 带宽投票 / System SD interconnect votes
+
+板级 DTS 为 `sdhc_2` 补齐 `sdhc-ddr`（`aggre2_noc MASTER_SDCC_2 → mc_virt SLAVE_EBI_CH0`）与 `cpu-sdhc`（`gem_noc MASTER_AMPSS_M0 → config_noc SLAVE_SDCC_2`）两条 SM8250 互联通路，并在 `sdhc2_opp_table` 的四个频率点（19.2 / 50 / 100 / 202 MHz）填入 `opp-peak-kBps` / `opp-avg-kBps`。数值对应所有者原厂运行时 FDT 中 4-bit SD 控制器在 20 / 25 / 50 / 100.75 MB/s 档位的十进制 kB/s 投票，为后续解除 `sync_state` 开机带宽兜底做准备。源码与 DTB 比对为离线证据（O），实机表现待验证（U）。
+
+The board DTS adds the two SM8250 `sdhci-msm` interconnect paths (`sdhc-ddr` and `cpu-sdhc`) on `sdhc_2` and `opp-peak-kBps` / `opp-avg-kBps` entries on the four `sdhc2_opp_table` OPPs (19.2 / 50 / 100 / 202 MHz), mapped from the owner stock runtime-FDT 4-bit SD bus cases (20 / 25 / 50 / 100.75 MB/s, decimal kBps) in preparation for `sync_state` handoff. Source and DTB checks are offline evidence (O); device behavior remains unverified (U).
