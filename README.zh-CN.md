@@ -2,9 +2,9 @@
 
 R4（2026-11-15）：维护者从空白 **16 GB 新卡**照公开文档全新安装通过，包 **`20261115-1`**（**H + R**：用户提供的 Claude SSH 核对与用户交互观察）。见[新卡结果与操作清单](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/fresh-install.md)。第三方独立复现仍为 **U**；已有私有输入复用，提取未重做、保持原证据级别。现有 Recovery/U-Boot 未重编、未重刷；原工作卡保留作回退。
 
-当前源码含十八个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
+当前源码含二十一个补丁与板级集成，证据只覆盖一台平板；音频、充电、电源键／合盖、Venus 及缺陷见[中心状态页](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/status.md)。需要已解锁 Bootloader 并替换 Recovery，错误镜像可能导致无法启动。**安装流程未经第三方从空白卡独立验证，欢迎反馈。**
 
-在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的十八个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
+在华为 MatePad 11（DBY-W09，骁龙 865／SM8250）上运行 Linux 7.2.10 的二十一个补丁、配置与板级源码。完整上游源码和所有者数据另行准备。
 
 [English](README.md) · [项目中心](https://github.com/youzjuzi/dby-w09-linux) · [U-Boot](https://github.com/youzjuzi/dby-w09-uboot) · [安装与上机检查](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/install.zh-CN.md)
 
@@ -44,7 +44,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 18
+test "$#" -eq 21
 for patch_file do
   patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -61,7 +61,7 @@ python3 -I -B tools/build-board-dtb.py --kernel "$KERNEL_SOURCE" \
 
 ## 记录产物（O）
 
-下表为历史六补丁基线摘要，不是当前十八补丁配置、音频、霍尔／定时器或 Venus 板级增量的预期摘要。
+下表为历史六补丁基线摘要，不是当前二十一补丁配置、音频、霍尔／定时器或 Venus 板级增量的预期摘要。
 
 | 产物 | SHA-256 |
 |---|---|

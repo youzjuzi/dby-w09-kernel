@@ -249,3 +249,39 @@ at 120 Hz, including 38 ultra-rapid off-to-wake intervals of 13.0–67.9 ms and 
 291 s idle screen-off wake), `0/46` ESD resets occurred, `PHY0=0x33` and
 `PHY1=0x37` held across all 48 PHY resets, and all 16 post-boot touch reloads
 reported `d18=a3`. Multi-day long-term stability remains U.
+
+
+## 0019 — GENI UART sleep-set bandwidth for serdev ports (SL2f; O, device results H, 2026-11-18)
+
+Upstream switches the GENI serial ICC tag to `QCOM_ICC_TAG_ACTIVE_ONLY` during
+system suspend only for the console port. The Bluetooth UART is held by serdev,
+keeps its runtime-PM reference across s2idle and therefore kept its QUP/SNoC/CNoC
+bandwidth in the RPMh SLEEP set; RPMh event tracing on one tablet attributed
+every remaining APSS sleep-set vote to that port. Patch 0019 applies the console
+policy to all ports and restores `QCOM_ICC_TAG_ALWAYS` on resume; active and wake
+bandwidth, protocol handling and wake IRQs are unchanged. Bluetooth reconnected
+after a 10 h suspend (H).
+
+
+## 0020 — LPASS macro and dcodec runtime votes (SL2f; O, device results H + R, 2026-11-18)
+
+The rx/tx/va LPASS macros enabled the Q6 `macro` and `dcodec` vote clocks at
+probe and released them only at remove, so the ADSP never entered sleep. Patch
+0020 moves both votes into runtime PM (resume: `macro`, `dcodec`, then
+mclk/npl/fsgen; suspend in reverse), starts the device active with a held
+reference until the clock output is registered, then drops it with autosuspend;
+`regcache_sync()` failures roll back the enabled clocks. Repeated playback,
+four-microphone capture and Bluetooth A2DP worked after idle periods (R).
+
+
+## 0021 — q6afe LPASS vote handles (SL2f-fix1; O, device results H + R, 2026-11-18)
+
+The dedicated vote response (`0x100f5`) carries one client handle, which
+upstream never stored, so every devote (`0x100f6`) was sent with handle 0 and
+rejected by the ADSP (error `0x1`), and each runtime resume added an ADSP vote
+client. Patch 0021 length-checks the response, returns the nonzero handle to the
+clock provider with the AFE mutex held until it is copied, handles basic vote
+and devote responses and waits for the devote acknowledgement; a zero handle
+makes unvote a no-op. Device result: no devote errors, the ADSP slept for the
+whole of a 122 s awake screen-off window and a 10 h suspend; its own awake
+power cost was within measurement noise (about 0.01 W).

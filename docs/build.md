@@ -40,7 +40,7 @@ KERNEL_SOURCE="$KERNEL_WORK/linux-7.2.10"
 KERNEL_BUILD="$KERNEL_WORK/build"
 mkdir "$KERNEL_BUILD"
 set -- "$KERNEL_REPO"/patches/*.patch
-test "$#" -eq 18
+test "$#" -eq 21
 for patch_file do
     patch --batch -d "$KERNEL_SOURCE" -p1 --fuzz=0 < "$patch_file"
 done
@@ -83,13 +83,15 @@ was about 0.7 W (U, estimated from the fuel gauge).
 once `deferred_probe_timeout` (10 s after the last driver registration) expires,
 so intentionally blacklisted or unbound DT consumers such as Venus do not pin
 boot interconnect bandwidth and `rpmhpd` voltage floors indefinitely; `sdhc_2`
-carries board interconnect and OPP bandwidth votes beforehand (O). Device
-behavior and power impact remain unverified (U).
+carries board interconnect and OPP bandwidth votes beforehand (O). On one
+tablet the forced `sync_state()` ran at 16.7 s with no regressions (H, 2026-11-18).
 
 SL2c uses `QCOM_ICC_TAG_ACTIVE_ONLY` for all eight CPU `cpu-ddr` paths,
 excluding their bandwidth from the RPMh SLEEP set while retaining AMC/WAKE
-votes and the original L3 path; device behavior and power impact remain
-unverified (O implementation, hardware Pending).
+votes and the original L3 path. With patches 0019–0021 added, a 10 h overnight
+s2idle on one tablet (Wi-Fi and Bluetooth on) kept DDR at 300 MHz throughout and
+averaged about 0.61 W from the fuel gauge (H, 2026-11-19; ±1 % quantisation
+gives 0.55–0.66 W); `aosd`/`cxsd`/`ddr` still stay at zero.
 
 These are the expected outputs of the recipe. The current R4 rebuild record is in the hub [versions page](https://github.com/youzjuzi/dby-w09-linux/blob/main/docs/versions.md); an offline result does not validate new-card boot.
 
